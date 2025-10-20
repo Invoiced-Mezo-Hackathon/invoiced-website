@@ -39,12 +39,12 @@
     <meta property="og:type" content="website">
     <meta property="og:title" content="Invoiced - Bitcoin Payments for everyone">
     <meta property="og:description" content="Accept and send invoice payments in Bitcoin — simple, fast, and secure.">
-    <meta property="og:image" content="https://framerusercontent.com/images/wCYUibnLamF4QEALixJNtDfnFk.png">
+    <meta property="og:image" content="/preview.png">
     
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Invoiced - Bitcoin Payments for everyone">
     <meta name="twitter:description" content="Accept and send invoice payments in Bitcoin — simple, fast, and secure.">
-    <meta name="twitter:image" content="https://framerusercontent.com/images/wCYUibnLamF4QEALixJNtDfnFk.png">
+    <meta name="twitter:image" content="/preview.png">
     
     <style data-framer-font-css>@font-face { font-family: "Inter"; src: url("https://framerusercontent.com/assets/5vvr9Vy74if2I6bQbJvbw7SY1pQ.woff2"); font-display: swap; font-style: normal; font-weight: 400; unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F }
 @font-face { font-family: "Inter"; src: url("https://framerusercontent.com/assets/EOr0mi4hNtlgWNn9if640EZzXCo.woff2"); font-display: swap; font-style: normal; font-weight: 400; unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116 }
@@ -145,6 +145,8 @@
         setMeta('meta[property="og:description"]', 'content', desc);
         setMeta('meta[name="twitter:title"]', 'content', title);
         setMeta('meta[name="twitter:description"]', 'content', desc);
+        setMeta('meta[property="og:image"]', 'content', '/preview.png');
+        setMeta('meta[name="twitter:image"]', 'content', '/preview.png');
 
         function setFavicon(href){
           var links = Array.from(document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]'));
@@ -165,6 +167,8 @@
           setMeta('meta[name="twitter:title"]', 'content', title);
           setMeta('meta[name="twitter:description"]', 'content', desc);
           setFavicon('/Title (56).png');
+          setMeta('meta[property="og:image"]', 'content', '/preview.png');
+          setMeta('meta[name="twitter:image"]', 'content', '/preview.png');
         });
         headObserver.observe(document.head, { childList: true, attributes: true, subtree: true });
       } catch (e) { /* no-op */ }
