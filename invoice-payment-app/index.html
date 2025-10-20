@@ -9,9 +9,27 @@
     
     
     
-    <meta name="viewport" content="width=device-width">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="generator" content="Framer ed41f9e">
     <title>Invoiced - Bitcoin Payments for everyone</title>
+    <style>
+        /* Mobile scaling fix */
+        @media screen and (max-width: 809px) {
+            html {
+                font-size: 16px !important;
+            }
+            body {
+                font-size: 16px !important;
+                zoom: 1 !important;
+                transform: scale(1) !important;
+            }
+            #main {
+                font-size: 16px !important;
+                zoom: 1 !important;
+                transform: scale(1) !important;
+            }
+        }
+    </style>
     <script>
         // Override Framer's dynamic title changes
         const originalTitle = "Invoiced - Bitcoin Payments for everyone";
