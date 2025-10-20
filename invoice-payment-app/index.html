@@ -63,6 +63,45 @@
                 document.title = originalTitle;
             }
         }, 1000);
+
+        // Mobile scaling fix - continuously enforce proper mobile scaling
+        function enforceMobileScaling() {
+            if (window.innerWidth <= 809) {
+                // Force proper viewport scaling
+                const viewport = document.querySelector('meta[name="viewport"]');
+                if (viewport) {
+                    viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+                }
+                
+                // Force proper font sizes
+                document.documentElement.style.fontSize = '16px';
+                document.body.style.fontSize = '16px';
+                document.body.style.zoom = '1';
+                document.body.style.transform = 'scale(1)';
+                
+                const mainElement = document.getElementById('main');
+                if (mainElement) {
+                    mainElement.style.fontSize = '16px';
+                    mainElement.style.zoom = '1';
+                    mainElement.style.transform = 'scale(1)';
+                }
+            }
+        }
+
+        // Run immediately
+        enforceMobileScaling();
+        
+        // Run on window resize
+        window.addEventListener('resize', enforceMobileScaling);
+        
+        // Run periodically to override any Framer changes
+        setInterval(enforceMobileScaling, 500);
+        
+        // Run after DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', enforceMobileScaling);
+        
+        // Run after window load
+        window.addEventListener('load', enforceMobileScaling);
     </script>
     <meta name="description" content="Accept and send invoice payments in Bitcoin — simple, fast, and secure.">
     <meta name="framer-search-index" content="https://framerusercontent.com/sites/3LmGLBy5XOILUP6bbWJYys/searchIndex-4tFHMKRSyYjK.json">
