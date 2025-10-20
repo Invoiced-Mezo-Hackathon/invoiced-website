@@ -1,13 +1,13 @@
 #root {
-  max-width: 1280px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
   text-align: center;
 }
 
 .logo {
-  height: 6em;
-  padding: 1.5em;
+  height: clamp(3rem, 12vw, 6rem);
+  padding: 1rem;
   will-change: filter;
   transition: filter 300ms;
 }
@@ -33,9 +33,11 @@
   }
 }
 
-.card {
-  padding: 2em;
+@media (max-width: 809.98px) {
+  h1 { font-size: clamp(1.5rem, 6vw, 2.25rem); }
 }
+
+.card { padding: 1.25em; }
 
 .read-the-docs {
   color: #888;

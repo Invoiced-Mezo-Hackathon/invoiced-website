@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     
     
-    <script>try{if(localStorage.get("__framer_force_showing_editorbar_since")){const n=document.createElement("link");n.rel = "modulepreload";n.href="https://framer.com/edit/init.mjs";document.head.appendChild(n)}}catch(e){}</script>
+    
     
     
     
@@ -16,9 +16,25 @@
     <meta name="framer-search-index" content="https://framerusercontent.com/sites/3LmGLBy5XOILUP6bbWJYys/searchIndex-4tFHMKRSyYjK.json">
     <meta name="framer-search-index-fallback" content="https://framerusercontent.com/sites/3LmGLBy5XOILUP6bbWJYys/searchIndex-M1j4RyrcvG5u.json">
     <meta name="framer-html-plugin" content="disable">
-    <link href="/vite.svg" rel="icon" media="(prefers-color-scheme: light)">
-    <link href="/vite.svg" rel="icon" media="(prefers-color-scheme: dark)">
-    <link rel="apple-touch-icon" href="/vite.svg">
+    <link href="/Title (56).png" rel="icon" media="(prefers-color-scheme: light)">
+    <link href="/Title (56).png" rel="icon" media="(prefers-color-scheme: dark)">
+    <link rel="apple-touch-icon" href="/Title (56).png">
+    <style id="responsive-fixes">
+      html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+      *, *::before, *::after { box-sizing: border-box; }
+      /* Force Framer root containers to be fluid */
+      #main, [data-framer-generated-page], [data-framer-hydrate-v2], [data-framer-ssr-released-at] {
+        width: 100% !important; max-width: 100% !important; min-width: 0 !important;
+      }
+      /* Make media scale */
+      img, video, canvas, svg { max-width: 100%; height: auto; }
+      /* Kill accidental fixed widths inside inline styles */
+      [style*="width:"] { max-width: 100% !important; }
+      /* Gentle padding on small screens */
+      @media (max-width: 809.98px) {
+        body { padding: 0 12px; }
+      }
+    </style>
     
     <meta property="og:type" content="website">
     <meta property="og:title" content="Invoiced - Bitcoin Payments for everyone">
@@ -106,5 +122,53 @@
     
     
     
+  <script>
+    (function enforceHeadMeta(){
+      try {
+        var title = 'Invoiced - Bitcoin Payments for everyone';
+        var desc = 'Accept and send invoice payments in Bitcoin — simple, fast, and secure.';
+        if (document.title !== title) document.title = title;
+
+        function setMeta(selector, attr, value){
+          var el = document.querySelector(selector);
+          if (!el) {
+            el = document.createElement('meta');
+            if (selector.includes('[name="')) el.setAttribute('name', selector.split('[name="')[1].split('"')[0]);
+            if (selector.includes('[property="')) el.setAttribute('property', selector.split('[property="')[1].split('"')[0]);
+            document.head.appendChild(el);
+          }
+          if (el.getAttribute(attr) !== value) el.setAttribute(attr, value);
+        }
+
+        setMeta('meta[name="description"]', 'content', desc);
+        setMeta('meta[property="og:title"]', 'content', title);
+        setMeta('meta[property="og:description"]', 'content', desc);
+        setMeta('meta[name="twitter:title"]', 'content', title);
+        setMeta('meta[name="twitter:description"]', 'content', desc);
+
+        function setFavicon(href){
+          var links = Array.from(document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]'));
+          if (links.length === 0) {
+            var l1 = document.createElement('link'); l1.rel = 'icon'; l1.href = href; document.head.appendChild(l1);
+          } else {
+            links.forEach(function(l){ if (l.getAttribute('href') !== href) l.setAttribute('href', href); });
+          }
+        }
+        setFavicon('/Title (56).png');
+
+        // Prevent third-party scripts from reverting head tags
+        var headObserver = new MutationObserver(function(){
+          if (document.title !== title) document.title = title;
+          setMeta('meta[name="description"]', 'content', desc);
+          setMeta('meta[property="og:title"]', 'content', title);
+          setMeta('meta[property="og:description"]', 'content', desc);
+          setMeta('meta[name="twitter:title"]', 'content', title);
+          setMeta('meta[name="twitter:description"]', 'content', desc);
+          setFavicon('/Title (56).png');
+        });
+        headObserver.observe(document.head, { childList: true, attributes: true, subtree: true });
+      } catch (e) { /* no-op */ }
+    })();
+  </script>
 </body>
 </html>
