@@ -1,3 +1,6 @@
+
+
+
 <!doctype html>
 
 <html lang="en">
@@ -12,6 +15,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="generator" content="Framer ed41f9e">
     <title>Invoiced - Bitcoin Payments for everyone</title>
+    
+    <!-- Performance optimizations for dashboard loading -->
+    <link rel="dns-prefetch" href="https://invoiced-dashboard.vercel.app">
+    <link rel="preconnect" href="https://invoiced-dashboard.vercel.app" crossorigin>
+    <link rel="preconnect" href="https://vercel.app" crossorigin>
+    <link rel="prefetch" href="https://invoiced-dashboard.vercel.app" as="document">
+    <link rel="preload" href="https://invoiced-dashboard.vercel.app" as="document" fetchpriority="high">
+    
     <style>
         /* Mobile scaling fix */
         @media screen and (max-width: 809px) {
@@ -102,6 +113,604 @@
         
         // Run after window load
         window.addEventListener('load', enforceMobileScaling);
+
+        // Performance: Aggressive prefetching for faster loading
+        const dashboardUrl = 'https://invoiced-dashboard.vercel.app/';
+        let prefetched = false;
+        let preloaded = false;
+        
+        function prefetchDashboard() {
+            if (prefetched) return;
+            
+            // Add prefetch link
+            if (!document.querySelector(`link[href="${dashboardUrl}"][rel="prefetch"]`)) {
+                const link = document.createElement('link');
+                link.rel = 'prefetch';
+                link.href = dashboardUrl;
+                link.as = 'document';
+                link.fetchPriority = 'high';
+                document.head.appendChild(link);
+            }
+            
+            // Also use fetch API for more aggressive prefetching
+            if ('fetch' in window && 'AbortController' in window) {
+                const controller = new AbortController();
+                fetch(dashboardUrl, {
+                    method: 'GET',
+                    mode: 'no-cors',
+                    cache: 'default',
+                    signal: controller.signal
+                }).catch(() => {}); // Ignore errors
+                
+                // Store controller for potential cancellation
+                window._dashboardPrefetchController = controller;
+            }
+            
+            prefetched = true;
+        }
+        
+        function preloadDashboard() {
+            if (preloaded) return;
+            
+            // Use fetch to actually fetch and cache the page
+            if ('fetch' in window) {
+                fetch(dashboardUrl, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'default',
+                    credentials: 'omit'
+                }).then(() => {
+                    // Successfully preloaded
+                    preloaded = true;
+                }).catch(() => {
+                    // Ignore errors, but still mark as attempted
+                    preloaded = true;
+                });
+            }
+            
+            preloaded = true;
+        }
+        
+        // Early connection establishment
+        function establishEarlyConnection() {
+            // Multiple connection strategies
+            if ('connection' in navigator && navigator.connection) {
+                // Only prefetch on good connections
+                const connection = navigator.connection;
+                const effectiveType = connection.effectiveType || '4g';
+                
+                if (effectiveType === '4g' || effectiveType === '3g') {
+                    prefetchDashboard();
+                }
+            } else {
+                // Assume good connection and prefetch
+                prefetchDashboard();
+            }
+        }
+
+        // Find and convert "Create Invoice now" button specifically
+        function findAndConvertCreateInvoiceButton() {
+            const linkAttribute = 'data-linked-to-dashboard';
+            
+            if (!document.body) return;
+            
+            // Search for elements containing "Create Invoice" text
+            const allElements = document.querySelectorAll('*');
+            const searchPatterns = [
+                'create invoice now',
+                'create invoice',
+                'invoice now',
+                'Create Invoice now',
+                'Create Invoice',
+                'Invoice now'
+            ];
+            
+            for (let el of allElements) {
+                const text = (el.textContent || '').trim();
+                const isMatching = searchPatterns.some(pattern => 
+                    text.toLowerCase().includes(pattern.toLowerCase())
+                );
+                
+                if (isMatching && el.getAttribute(linkAttribute) !== 'true') {
+                    // Check if it's an input or editable element
+                    const isInput = el.tagName === 'INPUT' || 
+                                   el.tagName === 'TEXTAREA' || 
+                                   el.contentEditable === 'true' ||
+                                   el.hasAttribute('contenteditable');
+                    
+                    // Check if it looks like a button element
+                    const tag = el.tagName;
+                    const role = el.getAttribute('role');
+                    const style = window.getComputedStyle(el);
+                    const hasButtonClass = el.classList.toString().toLowerCase().includes('button');
+                    const isClickable = style.cursor === 'pointer' || role === 'button';
+                    
+                    let targetElement = el;
+                    
+                    // If it's an input/editable, convert it to a button behavior
+                    if (isInput) {
+                        // Make it non-editable and button-like
+                        if (el.contentEditable === 'true') {
+                            el.contentEditable = 'false';
+                        }
+                        el.setAttribute('readonly', 'true');
+                        el.style.userSelect = 'none';
+                        el.style.cursor = 'pointer';
+                        // Remove input behaviors
+                        el.removeAttribute('type');
+                    }
+                    
+                    // Ensure it acts like a button
+                    if (tag !== 'BUTTON' && role !== 'button') {
+                        el.setAttribute('role', 'button');
+                        if (!isClickable) {
+                            el.style.cursor = 'pointer';
+                        }
+                    }
+                    
+                    // Link it with priority
+                    targetElement.setAttribute(linkAttribute, 'true');
+                    targetElement.onclick = function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        prefetchDashboard(); // Ensure prefetch before navigation
+                        window.location.href = dashboardUrl;
+                        return false;
+                    };
+                    
+                    // Aggressive prefetch on interaction
+                    targetElement.addEventListener('mouseenter', function() {
+                        prefetchDashboard();
+                        preloadDashboard(); // Actually fetch the page on hover
+                    }, { once: true });
+                    
+                    targetElement.addEventListener('mousedown', function() {
+                        preloadDashboard(); // Preload on mousedown (before click)
+                    }, { once: true });
+                    
+                    // Add touch start prefetch for mobile
+                    targetElement.addEventListener('touchstart', function() {
+                        prefetchDashboard();
+                        preloadDashboard(); // Preload immediately on touch
+                    }, { once: true });
+                    
+                    // Use Intersection Observer to prefetch when button is visible
+                    if ('IntersectionObserver' in window) {
+                        const observer = new IntersectionObserver(function(entries) {
+                            entries.forEach(entry => {
+                                if (entry.isIntersecting) {
+                                    prefetchDashboard();
+                                    // Preload if button is in viewport
+                                    if (entry.intersectionRatio > 0.5) {
+                                        preloadDashboard();
+                                    }
+                                }
+                            });
+                        }, {
+                            rootMargin: '200px', // Start prefetching 200px before button is visible
+                            threshold: [0, 0.5, 1]
+                        });
+                        
+                        observer.observe(targetElement);
+                    }
+                    
+                    break; // Found it, stop searching
+                }
+            }
+        }
+
+        // Link all buttons to dashboard
+        function linkButtonsToDashboard() {
+            const linkAttribute = 'data-linked-to-dashboard';
+            
+            // Find all button elements
+            const buttons = document.querySelectorAll('button:not([' + linkAttribute + '])');
+            buttons.forEach(button => {
+                // Skip if already has onclick or href
+                if (!button.onclick && !button.getAttribute('href')) {
+                    button.setAttribute(linkAttribute, 'true');
+                    button.onclick = function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.location.href = dashboardUrl;
+                        return false;
+                    };
+                    button.style.cursor = 'pointer';
+                }
+            });
+            
+            // Find clickable elements that might be buttons (Framer often uses divs as buttons)
+            const clickableSelectors = [
+                '[role="button"]',
+                '[data-button]',
+                '.button',
+                '[class*="Button"]',
+                '[class*="button"]',
+                '[data-framer-name*="button" i]',
+                '[data-framer-name*="Button" i]'
+            ];
+            
+            clickableSelectors.forEach(selector => {
+                try {
+                    const elements = document.querySelectorAll(selector + ':not([' + linkAttribute + '])');
+                    elements.forEach(element => {
+                        // Skip if already has onclick or href, or if it's inside a link
+                        if (!element.onclick && !element.getAttribute('href') && !element.closest('a')) {
+                            // Check if element looks like a button (has text, is visible, etc.)
+                            const text = element.textContent || '';
+                            const style = window.getComputedStyle(element);
+                            if (text.trim().length > 0 && style.display !== 'none' && style.visibility !== 'hidden') {
+                                element.setAttribute(linkAttribute, 'true');
+                                element.onclick = function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    window.location.href = dashboardUrl;
+                                    return false;
+                                };
+                                element.style.cursor = 'pointer';
+                            }
+                        }
+                    });
+                } catch (e) {
+                    // Ignore selector errors
+                }
+            });
+        }
+        
+        // Monitor for new buttons added dynamically
+        function setupButtonObserver() {
+            if (document.body) {
+                const buttonObserver = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.addedNodes.length > 0) {
+                            linkButtonsToDashboard();
+                            findAndConvertCreateInvoiceButton();
+                        }
+                    });
+                });
+                
+                // Start observing the document for new buttons
+                buttonObserver.observe(document.body, { childList: true, subtree: true });
+                return buttonObserver;
+            }
+            return null;
+        }
+
+        // Establish early connection immediately
+        establishEarlyConnection();
+        
+        // Prefetch dashboard immediately for faster loading
+        prefetchDashboard();
+        
+        // Use requestIdleCallback for non-blocking prefetch
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(function() {
+                preloadDashboard();
+            }, { timeout: 2000 });
+        } else {
+            // Fallback for browsers without requestIdleCallback
+            setTimeout(preloadDashboard, 1000);
+        }
+        
+        // Run immediately
+        linkButtonsToDashboard();
+        findAndConvertCreateInvoiceButton();
+        
+        // Run after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            linkButtonsToDashboard();
+            findAndConvertCreateInvoiceButton();
+            setupButtonObserver();
+            establishEarlyConnection();
+            prefetchDashboard();
+            // Start preloading after DOM is ready
+            setTimeout(preloadDashboard, 500);
+        });
+        
+        // Run after window load (when Framer content is loaded)
+        window.addEventListener('load', function() {
+            linkButtonsToDashboard();
+            findAndConvertCreateInvoiceButton();
+            setupButtonObserver();
+            establishEarlyConnection();
+            prefetchDashboard();
+            // Aggressive preload after page fully loaded
+            setTimeout(preloadDashboard, 200);
+        });
+        
+        // Prefetch on user interaction (scroll, mouse move, etc.)
+        let interactionPrefetched = false;
+        function prefetchOnInteraction() {
+            if (interactionPrefetched) return;
+            prefetchDashboard();
+            preloadDashboard();
+            interactionPrefetched = true;
+        }
+        
+        // Prefetch on any user interaction
+        ['scroll', 'mousemove', 'touchstart', 'keydown'].forEach(event => {
+            window.addEventListener(event, prefetchOnInteraction, { 
+                once: true, 
+                passive: true 
+            });
+        });
+        
+        // Run periodically to catch dynamically added buttons (more frequent for Create Invoice button)
+        setInterval(function() {
+            linkButtonsToDashboard();
+            findAndConvertCreateInvoiceButton();
+        }, 500); // Check every 500ms for faster "Create Invoice" button detection
+        
+        // Setup observer once body is available
+        if (document.body) {
+            setupButtonObserver();
+        } else {
+            // Wait for body to be available
+            const bodyCheck = setInterval(function() {
+                if (document.body) {
+                    setupButtonObserver();
+                    clearInterval(bodyCheck);
+                }
+            }, 100);
+        }
+
+        // Remove "Experienced The New Way of Payments," text
+        function removePaymentText() {
+            if (!document.body) return;
+            
+            const textToRemove = [
+                'Experienced The New Way of Payments,',
+                'Experienced The New Way of Payments',
+                'Experience The New Way of Payments',
+                'Experience The New Way of Payments,'
+            ];
+            
+            // Use TreeWalker to find text nodes
+            const walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+            
+            let node;
+            const nodesToProcess = [];
+            while (node = walker.nextNode()) {
+                const text = node.textContent || '';
+                for (let pattern of textToRemove) {
+                    if (text.includes(pattern)) {
+                        nodesToProcess.push({ node: node, pattern: pattern });
+                        break;
+                    }
+                }
+            }
+            
+            // Process nodes to remove or replace text
+            nodesToProcess.forEach(({ node, pattern }) => {
+                if (node.parentElement) {
+                    const text = node.textContent;
+                    const newText = text.replace(new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+                    
+                    if (newText === '') {
+                        // If text becomes empty, remove the entire element if it's safe
+                        const parent = node.parentElement;
+                        // Only remove if parent is not a critical element
+                        if (parent.tagName !== 'HTML' && parent.tagName !== 'BODY' && 
+                            parent.tagName !== 'HEAD' && !parent.closest('script') &&
+                            !parent.closest('style')) {
+                            parent.remove();
+                        } else {
+                            node.textContent = '';
+                        }
+                    } else {
+                        node.textContent = newText;
+                    }
+                }
+            });
+        }
+        
+        // Run removal function immediately and periodically
+        removePaymentText();
+        
+        // Monitor for dynamically added content
+        function setupTextRemovalObserver() {
+            if (document.body) {
+                const textRemovalObserver = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.addedNodes.length > 0) {
+                            removePaymentText();
+                        }
+                        if (mutation.type === 'characterData' || mutation.type === 'childList') {
+                            removePaymentText();
+                        }
+                    });
+                });
+                
+                textRemovalObserver.observe(document.body, {
+                    childList: true,
+                    subtree: true,
+                    characterData: true
+                });
+                return textRemovalObserver;
+            }
+            return null;
+        }
+        
+        // Setup observer
+        setupTextRemovalObserver();
+        
+        // Wait for body if not available
+        if (!document.body) {
+            const bodyCheckForText = setInterval(function() {
+                if (document.body) {
+                    setupTextRemovalObserver();
+                    removePaymentText();
+                    clearInterval(bodyCheckForText);
+                }
+            }, 100);
+        }
+        
+        // Run after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            removePaymentText();
+            setupTextRemovalObserver();
+        });
+        
+        // Run after window load
+        window.addEventListener('load', function() {
+            removePaymentText();
+            setupTextRemovalObserver();
+        });
+        
+        // Run periodically to catch any missed instances
+        setInterval(removePaymentText, 1000);
+
+        // Remove lines/dividers near "Experience the new way" text
+        function removeLinesNearExperienceText() {
+            if (!document.body) return;
+            
+            const experienceTextPatterns = [
+                'experience the new way',
+                'Experience The New Way',
+                'experienced the new way',
+                'Experienced The New Way'
+            ];
+            
+            // Find all elements that might contain this text
+            const allElements = document.querySelectorAll('*');
+            const elementsToCheck = [];
+            
+            for (let el of allElements) {
+                const text = (el.textContent || '').trim().toLowerCase();
+                if (experienceTextPatterns.some(pattern => text.includes(pattern.toLowerCase()))) {
+                    elementsToCheck.push(el);
+                }
+            }
+            
+            // For each matching element, remove nearby lines
+            elementsToCheck.forEach(element => {
+                // Remove adjacent hr elements
+                let nextSibling = element.nextElementSibling;
+                while (nextSibling) {
+                    if (nextSibling.tagName === 'HR' || nextSibling.tagName === 'hr') {
+                        const toRemove = nextSibling;
+                        nextSibling = nextSibling.nextElementSibling;
+                        toRemove.remove();
+                    } else {
+                        break;
+                    }
+                }
+                
+                let prevSibling = element.previousElementSibling;
+                while (prevSibling) {
+                    if (prevSibling.tagName === 'HR' || prevSibling.tagName === 'hr') {
+                        const toRemove = prevSibling;
+                        prevSibling = prevSibling.previousElementSibling;
+                        toRemove.remove();
+                    } else {
+                        break;
+                    }
+                }
+                
+                // Check parent and siblings for line-like elements
+                const parent = element.parentElement;
+                if (parent) {
+                    const siblings = Array.from(parent.children);
+                    siblings.forEach(sibling => {
+                        if (sibling !== element) {
+                            const rect = sibling.getBoundingClientRect();
+                            const text = (sibling.textContent || '').trim();
+                            const style = window.getComputedStyle(sibling);
+                            
+                            // Check if it's a line-like element (very thin and long, or empty divider)
+                            const isThinLine = (rect.height < 5 && rect.width > 50) || 
+                                             (rect.width < 5 && rect.height > 50);
+                            const isEmptyDivider = text === '' && (rect.height < 3 || rect.width < 3);
+                            const hasBorderOnly = (style.borderTopWidth !== '0px' || style.borderBottomWidth !== '0px') && 
+                                                 text === '' && (rect.height < 10 || rect.width < 10);
+                            
+                            if ((isThinLine || isEmptyDivider || hasBorderOnly) && 
+                                sibling.tagName !== 'SCRIPT' && 
+                                sibling.tagName !== 'STYLE' &&
+                                sibling.tagName !== 'HEAD' &&
+                                sibling.tagName !== 'BODY') {
+                                sibling.remove();
+                            }
+                        }
+                    });
+                }
+                
+                // Also check next and previous siblings for line elements
+                const container = element.parentElement;
+                if (container) {
+                    // Check container's siblings
+                    let containerNext = container.nextElementSibling;
+                    if (containerNext) {
+                        const rect = containerNext.getBoundingClientRect();
+                        const text = (containerNext.textContent || '').trim();
+                        const isLine = (rect.height < 5 && rect.width > 30) || 
+                                      (rect.width < 5 && rect.height > 30) ||
+                                      (text === '' && rect.height < 3);
+                        if (isLine && containerNext.tagName !== 'SCRIPT' && containerNext.tagName !== 'STYLE') {
+                            containerNext.remove();
+                        }
+                    }
+                    
+                    let containerPrev = container.previousElementSibling;
+                    if (containerPrev) {
+                        const rect = containerPrev.getBoundingClientRect();
+                        const text = (containerPrev.textContent || '').trim();
+                        const isLine = (rect.height < 5 && rect.width > 30) || 
+                                      (rect.width < 5 && rect.height > 30) ||
+                                      (text === '' && rect.height < 3);
+                        if (isLine && containerPrev.tagName !== 'SCRIPT' && containerPrev.tagName !== 'STYLE') {
+                            containerPrev.remove();
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Setup function to monitor and remove lines
+        function setupLineRemovalObserver() {
+            if (document.body) {
+                const lineRemovalObserver = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.addedNodes.length > 0) {
+                            removeLinesNearExperienceText();
+                        }
+                    });
+                });
+                
+                lineRemovalObserver.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
+                return lineRemovalObserver;
+            }
+            return null;
+        }
+        
+        // Run immediately
+        removeLinesNearExperienceText();
+        
+        // Run after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            removeLinesNearExperienceText();
+            setupLineRemovalObserver();
+        });
+        
+        // Run after window load
+        window.addEventListener('load', function() {
+            removeLinesNearExperienceText();
+            setupLineRemovalObserver();
+        });
+        
+        // Run periodically
+        setInterval(removeLinesNearExperienceText, 1000);
+        
+        // Setup observer
+        setupLineRemovalObserver();
     </script>
     <meta name="description" content="Accept and send invoice payments in Bitcoin — simple, fast, and secure.">
     <meta name="framer-search-index" content="https://framerusercontent.com/sites/3LmGLBy5XOILUP6bbWJYys/searchIndex-4tFHMKRSyYjK.json">
