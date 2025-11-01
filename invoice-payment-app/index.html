@@ -4,15 +4,37 @@
 <head>
     <meta charset="utf-8">
     
+    <!-- Performance: Early resource hints for faster loading -->
+    <link rel="dns-prefetch" href="https://framerusercontent.com">
+    <link rel="dns-prefetch" href="https://framer.com">
+    <link rel="preconnect" href="https://framerusercontent.com" crossorigin>
+    <link rel="preconnect" href="https://framer.com">
+    
+    <!-- Preload critical font weights for hero (400, 700) -->
+    <link rel="preload" href="https://framerusercontent.com/assets/GrgcKwrN6d3Uz8EwcLHZxwEfC4.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="https://framerusercontent.com/assets/DXD0Q7LSl7HEvDzucnyLnGBHM.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="https://framerusercontent.com/assets/VgYFWiwsAC5OYxAycRXXvhze58.woff2" as="font" type="font/woff2" crossorigin>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/preview.png" as="image" fetchpriority="high">
+    <link rel="preload" href="/Title (56).png" as="image">
     
     <script>try{if(localStorage.get("__framer_force_showing_editorbar_since")){const n=document.createElement("link");n.rel = "modulepreload";n.href="https://framer.com/edit/init.mjs";document.head.appendChild(n)}}catch(e){}</script>
-    
-    
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="generator" content="Framer ed41f9e">
     <title>Invoiced - Bitcoin Payments for everyone</title>
     <style>
+        /* Critical CSS for faster initial render */
+        html { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        body { 
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
         /* Mobile scaling fix */
         @media screen and (max-width: 809px) {
             html {
@@ -31,21 +53,35 @@
         }
     </style>
     <script>
+        // Performance: Use requestIdleCallback for non-critical operations
+        const runWhenIdle = (callback, fallbackDelay = 100) => {
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(callback, { timeout: fallbackDelay });
+            } else {
+                setTimeout(callback, fallbackDelay);
+            }
+        };
+
         // Override Framer's dynamic title changes
         const originalTitle = "Invoiced - Bitcoin Payments for everyone";
         
         // Set title immediately
         document.title = originalTitle;
         
-        // Monitor for title changes and override them
+        // Monitor for title changes and override them (optimized)
+        let titleCheckScheduled = false;
+        const checkTitle = () => {
+            if (document.title !== originalTitle) {
+                document.title = originalTitle;
+            }
+            titleCheckScheduled = false;
+        };
+        
         const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'childList' && mutation.target === document.head) {
-                    if (document.title !== originalTitle) {
-                        document.title = originalTitle;
-                    }
-                }
-            });
+            if (!titleCheckScheduled) {
+                titleCheckScheduled = true;
+                requestAnimationFrame(checkTitle);
+            }
         });
         
         // Start observing
@@ -57,33 +93,48 @@
             titleElement.textContent = originalTitle;
         }
         
-        // Periodic check to ensure title stays correct
-        setInterval(function() {
-            if (document.title !== originalTitle) {
-                document.title = originalTitle;
-            }
-        }, 1000);
+        // Periodic check to ensure title stays correct (less frequently for performance)
+        // Use requestIdleCallback for non-critical periodic checks
+        const scheduleTitleCheck = () => {
+            runWhenIdle(() => {
+                checkTitle();
+                setTimeout(scheduleTitleCheck, 3000);
+            }, 3000);
+        };
+        scheduleTitleCheck();
 
-        // Mobile scaling fix - continuously enforce proper mobile scaling
+        // Mobile scaling fix - cached elements for performance
+        let cachedViewport = null;
+        let cachedMainElement = null;
+        
         function enforceMobileScaling() {
             if (window.innerWidth <= 809) {
-                // Force proper viewport scaling
-                const viewport = document.querySelector('meta[name="viewport"]');
-                if (viewport) {
-                    viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+                // Cache viewport element
+                if (!cachedViewport) {
+                    cachedViewport = document.querySelector('meta[name="viewport"]');
+                }
+                if (cachedViewport) {
+                    cachedViewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
                 }
                 
                 // Force proper font sizes
-                document.documentElement.style.fontSize = '16px';
-                document.body.style.fontSize = '16px';
-                document.body.style.zoom = '1';
-                document.body.style.transform = 'scale(1)';
+                if (document.documentElement) {
+                    document.documentElement.style.fontSize = '16px';
+                }
+                if (document.body) {
+                    document.body.style.fontSize = '16px';
+                    document.body.style.zoom = '1';
+                    document.body.style.transform = 'scale(1)';
+                }
                 
-                const mainElement = document.getElementById('main');
-                if (mainElement) {
-                    mainElement.style.fontSize = '16px';
-                    mainElement.style.zoom = '1';
-                    mainElement.style.transform = 'scale(1)';
+                // Cache main element
+                if (!cachedMainElement) {
+                    cachedMainElement = document.getElementById('main');
+                }
+                if (cachedMainElement) {
+                    cachedMainElement.style.fontSize = '16px';
+                    cachedMainElement.style.zoom = '1';
+                    cachedMainElement.style.transform = 'scale(1)';
                 }
             }
         }
@@ -91,11 +142,22 @@
         // Run immediately
         enforceMobileScaling();
         
-        // Run on window resize
-        window.addEventListener('resize', enforceMobileScaling);
+        // Run on window resize (debounced for performance)
+        let resizeTimeout;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(enforceMobileScaling, 100);
+        });
         
-        // Run periodically to override any Framer changes
-        setInterval(enforceMobileScaling, 500);
+        // Run periodically to override any Framer changes (less frequently for performance)
+        // Use requestIdleCallback for non-critical scaling checks
+        const scheduleScalingCheck = () => {
+            runWhenIdle(() => {
+                enforceMobileScaling();
+                setTimeout(scheduleScalingCheck, 3000);
+            }, 3000);
+        };
+        scheduleScalingCheck();
         
         // Run after DOM is fully loaded
         document.addEventListener('DOMContentLoaded', enforceMobileScaling);
@@ -106,21 +168,69 @@
         // Link buttons to dashboard
         const dashboardUrl = 'https://invoiced-dashboard.vercel.app/';
         
+        // Cache button texts for performance
+        const buttonTexts = [
+            'get started',
+            'Get Started',
+            'GET STARTED',
+            'start today',
+            'Start Today',
+            'START TODAY',
+            'create invoice now',
+            'Create Invoice now',
+            'Create Invoice Now',
+            'CREATE INVOICE NOW'
+        ];
+        
+        // Create lookup set for faster matching
+        const buttonTextsLower = new Set(buttonTexts.map(t => t.toLowerCase()));
+        
+        // Helper function to process an element for button linking
+        function processElement(element) {
+            // Skip if already processed or linked
+            if (element.getAttribute('data-linked-to-dashboard') === 'true') return;
+            if (element.tagName === 'BUTTON' || element.tagName === 'A' || element.getAttribute('role') === 'button') return;
+            
+            // Skip script, style, and other non-interactive elements
+            const tagName = element.tagName.toLowerCase();
+            if (['script', 'style', 'meta', 'link', 'title', 'head'].includes(tagName)) return;
+            
+            const text = (element.textContent || '').trim();
+            const textLower = text.toLowerCase();
+            const isTargetButton = Array.from(buttonTextsLower).some(buttonText => 
+                textLower === buttonText || textLower === buttonText.trim()
+            );
+            
+            // Only process if it's likely a button (has pointer cursor, clickable, etc.)
+            if (isTargetButton) {
+                const style = window.getComputedStyle(element);
+                const isLikelyButton = style.cursor === 'pointer' || 
+                                     element.onclick !== null ||
+                                     element.getAttribute('onclick') !== null ||
+                                     style.display !== 'none' ||
+                                     element.classList.toString().toLowerCase().includes('button');
+                
+                if (isLikelyButton || textLower === 'get started' || textLower === 'start today' || textLower.includes('create invoice now')) {
+                    // Mark as linked
+                    element.setAttribute('data-linked-to-dashboard', 'true');
+                    
+                    // Add click handler
+                    const clickHandler = function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.location.href = dashboardUrl;
+                        return false;
+                    };
+                    
+                    element.onclick = null;
+                    element.addEventListener('click', clickHandler, true);
+                    element.style.cursor = 'pointer';
+                }
+            }
+        }
+        
         function linkButtonsToDashboard() {
             if (!document.body) return;
-            
-            const buttonTexts = [
-                'get started',
-                'Get Started',
-                'GET STARTED',
-                'start today',
-                'Start Today',
-                'START TODAY',
-                'create invoice now',
-                'Create Invoice now',
-                'Create Invoice Now',
-                'CREATE INVOICE NOW'
-            ];
             
             // First, find all elements that might be buttons (buttons, anchors, role="button")
             const buttonLikeElements = document.querySelectorAll('button, a, [role="button"]');
@@ -142,8 +252,9 @@
                 }
                 
                 const text = (element.textContent || '').trim();
-                const isTargetButton = buttonTexts.some(buttonText => 
-                    text.toLowerCase().includes(buttonText.toLowerCase())
+                const textLower = text.toLowerCase();
+                const isTargetButton = Array.from(buttonTextsLower).some(buttonText => 
+                    textLower.includes(buttonText)
                 );
                 
                 if (isTargetButton) {
@@ -172,50 +283,26 @@
                 }
             });
             
-            // Also search through all elements to find divs/spans styled as buttons
-            const allElements = document.querySelectorAll('*');
-            allElements.forEach(element => {
-                // Skip if already processed or linked
-                if (element.getAttribute('data-linked-to-dashboard') === 'true') return;
-                if (element.tagName === 'BUTTON' || element.tagName === 'A' || element.getAttribute('role') === 'button') return;
-                
-                // Skip script, style, and other non-interactive elements
-                const tagName = element.tagName.toLowerCase();
-                if (['script', 'style', 'meta', 'link', 'title', 'head'].includes(tagName)) return;
-                
-                const text = (element.textContent || '').trim();
-                const isTargetButton = buttonTexts.some(buttonText => 
-                    text.toLowerCase() === buttonText.toLowerCase() || 
-                    text.toLowerCase() === buttonText.toLowerCase().trim()
-                );
-                
-                // Only process if it's likely a button (has pointer cursor, clickable, etc.)
-                if (isTargetButton) {
-                    const style = window.getComputedStyle(element);
-                    const isLikelyButton = style.cursor === 'pointer' || 
-                                         element.onclick !== null ||
-                                         element.getAttribute('onclick') !== null ||
-                                         style.display !== 'none' ||
-                                         element.classList.toString().toLowerCase().includes('button');
-                    
-                    if (isLikelyButton || text.toLowerCase() === 'get started' || text.toLowerCase() === 'start today' || text.toLowerCase().includes('create invoice now')) {
-                        // Mark as linked
-                        element.setAttribute('data-linked-to-dashboard', 'true');
-                        
-                        // Add click handler
-                        const clickHandler = function(e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            window.location.href = dashboardUrl;
-                            return false;
-                        };
-                        
-                        element.onclick = null;
-                        element.addEventListener('click', clickHandler, true);
-                        element.style.cursor = 'pointer';
-                    }
-                }
-            });
+            // Also search through likely button containers (optimized - avoid scanning all elements)
+            // Only scan main content area and common button containers
+            const likelyContainers = document.querySelectorAll('main, section, [class*="hero"], [class*="Hero"], [class*="button"], [class*="Button"], [data-framer-name*="button" i]');
+            const allElements = Array.from(likelyContainers).length > 0 ? 
+                Array.from(likelyContainers).flatMap(container => Array.from(container.querySelectorAll('*'))) : 
+                [];
+            
+            // Fallback: only scan all if no containers found and page is already loaded
+            if (allElements.length === 0 && document.readyState === 'complete') {
+                // Use requestIdleCallback for expensive full scan
+                runWhenIdle(() => {
+                    const fallbackElements = document.querySelectorAll('div, span');
+                    Array.from(fallbackElements).forEach(element => {
+                        processElement(element);
+                    });
+                }, 500);
+                return; // Exit early, let idle callback handle it
+            }
+            
+            allElements.forEach(processElement);
         }
 
         // Monitor for dynamically added buttons
@@ -238,23 +325,35 @@
             return observer;
         }
 
-        // Run immediately
-        linkButtonsToDashboard();
-        
-        // Run after DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
+        // Defer button linking until after initial render for faster hero load
+        runWhenIdle(() => {
             linkButtonsToDashboard();
-            setupButtonObserver();
+        }, 50);
+        
+        // Run after DOM is loaded (defer for performance)
+        document.addEventListener('DOMContentLoaded', function() {
+            runWhenIdle(() => {
+                linkButtonsToDashboard();
+                setupButtonObserver();
+            }, 100);
         });
         
         // Run after window load
         window.addEventListener('load', function() {
-            linkButtonsToDashboard();
-            setupButtonObserver();
+            runWhenIdle(() => {
+                linkButtonsToDashboard();
+                setupButtonObserver();
+            }, 50);
         });
         
-        // Run periodically to catch dynamically added buttons
-        setInterval(linkButtonsToDashboard, 1000);
+        // Run periodically to catch dynamically added buttons (less frequently for performance)
+        const scheduleButtonCheck = () => {
+            runWhenIdle(() => {
+                linkButtonsToDashboard();
+                setTimeout(scheduleButtonCheck, 2500);
+            }, 2500);
+        };
+        scheduleButtonCheck();
         
         // Setup observer once body is available
         if (document.body) {
@@ -443,29 +542,39 @@
             return observer;
         }
 
-        // Run removal functions immediately
-        removePoweredByMezoText();
-        removeStarsAndLines();
-        
-        // Run after DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
+        // Defer content removal until after initial render for faster hero load
+        runWhenIdle(() => {
             removePoweredByMezoText();
             removeStarsAndLines();
-            setupContentRemovalObserver();
+        }, 100);
+        
+        // Run after DOM is loaded (defer for performance)
+        document.addEventListener('DOMContentLoaded', function() {
+            runWhenIdle(() => {
+                removePoweredByMezoText();
+                removeStarsAndLines();
+                setupContentRemovalObserver();
+            }, 200);
         });
         
         // Run after window load
         window.addEventListener('load', function() {
-            removePoweredByMezoText();
-            removeStarsAndLines();
-            setupContentRemovalObserver();
+            runWhenIdle(() => {
+                removePoweredByMezoText();
+                removeStarsAndLines();
+                setupContentRemovalObserver();
+            }, 100);
         });
         
-        // Run periodically to catch any missed instances
-        setInterval(function() {
-            removePoweredByMezoText();
-            removeStarsAndLines();
-        }, 1000);
+        // Run periodically to catch any missed instances (less frequently for performance)
+        const scheduleContentRemoval = () => {
+            runWhenIdle(() => {
+                removePoweredByMezoText();
+                removeStarsAndLines();
+                setTimeout(scheduleContentRemoval, 2000);
+            }, 2000);
+        };
+        scheduleContentRemoval();
         
         // Setup observer once body is available
         if (document.body) {
