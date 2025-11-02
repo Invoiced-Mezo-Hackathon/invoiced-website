@@ -1,3 +1,4 @@
+
 <!doctype html>
 
 <html lang="en">
@@ -7,25 +8,95 @@
     <!-- Performance: Early resource hints for faster loading -->
     <link rel="dns-prefetch" href="https://framerusercontent.com">
     <link rel="dns-prefetch" href="https://framer.com">
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://framerusercontent.com" crossorigin>
     <link rel="preconnect" href="https://framer.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     
-    <!-- Preload critical font weights for hero (400, 700) -->
-    <link rel="preload" href="https://framerusercontent.com/assets/GrgcKwrN6d3Uz8EwcLHZxwEfC4.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="https://framerusercontent.com/assets/DXD0Q7LSl7HEvDzucnyLnGBHM.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="https://framerusercontent.com/assets/VgYFWiwsAC5OYxAycRXXvhze58.woff2" as="font" type="font/woff2" crossorigin>
+    <!-- Preload critical font weights for hero (400, 700) - highest priority -->
+    <link rel="preload" href="https://framerusercontent.com/assets/GrgcKwrN6d3Uz8EwcLHZxwEfC4.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">
+    <link rel="preload" href="https://framerusercontent.com/assets/DXD0Q7LSl7HEvDzucnyLnGBHM.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">
+    <link rel="preload" href="https://framerusercontent.com/assets/VgYFWiwsAC5OYxAycRXXvhze58.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">
     
-    <!-- Preload critical resources -->
+    <!-- Preload critical hero resources with high priority -->
     <link rel="preload" href="/preview.png" as="image" fetchpriority="high">
-    <link rel="preload" href="/Title (56).png" as="image">
+    <link rel="preload" href="/Title (56).png" as="image" fetchpriority="high">
+    
+    <!-- Optimize hero background images loading -->
+    <link rel="prefetch" as="image" href="https://framerusercontent.com">
     
     <script>try{if(localStorage.get("__framer_force_showing_editorbar_since")){const n=document.createElement("link");n.rel = "modulepreload";n.href="https://framer.com/edit/init.mjs";document.head.appendChild(n)}}catch(e){}</script>
+    
+    <!-- Header optimization CSS - inline for fastest loading -->
+    <style>
+        /* Critical header CSS - load header first */
+        header, nav, [class*="header" i], [class*="Header" i], 
+        [data-framer-name*="header" i], [data-framer-name*="Header" i],
+        [data-framer-name*="Navigation" i], [data-framer-name*="navigation" i] {
+            content-visibility: auto;
+            will-change: transform;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+        }
+    </style>
+    
+    <!-- Defer ALL non-critical scripts - move heavy operations to bottom -->
+    <script defer>
+        // Optimize header and hero - deferred to not block header
+        (function() {
+            const optimizeHeaderAndHero = () => {
+                // Optimize header first
+                const headerElements = document.querySelectorAll('header, nav, [class*="header" i], [data-framer-name*="header" i]');
+                headerElements.forEach(el => {
+                    try {
+                        el.style.willChange = 'transform';
+                        el.style.backfaceVisibility = 'hidden';
+                    } catch (e) {}
+                });
+                
+                // Then optimize hero images
+                const heroImages = document.querySelectorAll('main img, section img, [class*="hero" i] img, [data-framer-name*="hero" i] img');
+                heroImages.forEach(img => {
+                    try {
+                        if (img.loading !== 'lazy') {
+                            img.fetchPriority = 'high';
+                            img.loading = 'eager';
+                            if (img.decode) {
+                                img.decode();
+                            }
+                        }
+                    } catch (e) {}
+                });
+                
+                // Optimize background images
+                const heroSections = document.querySelectorAll('main, section, [class*="hero" i], [data-framer-name*="hero" i]');
+                heroSections.forEach(section => {
+                    try {
+                        const bgImage = window.getComputedStyle(section).backgroundImage;
+                        if (bgImage && bgImage !== 'none') {
+                            section.style.willChange = 'transform';
+                            section.style.backfaceVisibility = 'hidden';
+                        }
+                    } catch (e) {}
+                });
+            };
+            
+            // Run only after header is rendered
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    setTimeout(optimizeHeaderAndHero, 50);
+                });
+            } else {
+                setTimeout(optimizeHeaderAndHero, 50);
+            }
+        })();
+    </script>
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="generator" content="Framer ed41f9e">
     <title>Invoiced - Bitcoin Payments for everyone</title>
     <style>
-        /* Critical CSS for faster initial render */
+        /* Critical CSS for faster initial render - header first */
         html { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
@@ -33,6 +104,47 @@
             margin: 0;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Header optimization - highest priority for fast rendering */
+        header, nav, [class*="header" i], [class*="Header" i], 
+        [data-framer-name*="header" i], [data-framer-name*="Header" i],
+        [data-framer-name*="Navigation" i], [data-framer-name*="navigation" i] {
+            content-visibility: auto;
+            contain-intrinsic-size: 80px;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            will-change: transform;
+            backface-visibility: hidden;
+        }
+        
+        /* Hero section optimization - prevent layout shift and improve perceived performance */
+        main, section, [class*="hero" i], [class*="Hero" i], [data-framer-name*="hero" i] {
+            content-visibility: auto;
+            contain-intrinsic-size: 1000px;
+        }
+        
+        /* Optimize hero text rendering */
+        h1, h2, h3, [class*="heading" i], [data-framer-name*="heading" i], 
+        [data-framer-name*="Hero" i], [data-framer-name*="Title" i] {
+            font-display: swap;
+            will-change: transform;
+            backface-visibility: hidden;
+        }
+        
+        /* Optimize hero background images */
+        [style*="background-image"], [style*="backgroundImage"],
+        [class*="background" i], [data-framer-name*="Background" i] {
+            will-change: transform;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+        
+        /* Force GPU acceleration for hero content */
+        main > *, section > *:first-child, 
+        [class*="hero" i] > *:first-child {
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
         
         /* Mobile scaling fix */
@@ -51,8 +163,57 @@
                 transform: scale(1) !important;
             }
         }
+        
+        /* Aggressively hide decorative lines and separators immediately */
+        hr, [class*="line" i], [class*="divider" i], [class*="separator" i] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            height: 0 !important;
+            width: 0 !important;
+            overflow: hidden !important;
+        }
+        
+        /* Hide elements that are likely decorative lines (any thin elements) */
+        div[style*="height: 1px"], div[style*="height: 2px"], div[style*="height: 3px"],
+        div[style*="width: 1px"], div[style*="width: 2px"], div[style*="width: 3px"],
+        span[style*="height: 1px"], span[style*="height: 2px"], span[style*="height: 3px"],
+        span[style*="width: 1px"], span[style*="width: 2px"], span[style*="width: 3px"],
+        div[style*="border-top"], div[style*="border-bottom"], 
+        span[style*="border-top"], span[style*="border-bottom"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+        
+        /* Hide any SVG or canvas elements that might be decorative */
+        svg[width="1"], svg[height="1"], svg[width="2"], svg[height="2"],
+        svg[width="3"], svg[height="3"], canvas[width="1"], canvas[height="1"],
+        canvas[width="2"], canvas[height="2"], canvas[width="3"], canvas[height="3"] {
+            display: none !important;
+        }
+        
+        /* Hide SVG elements with <use href="#svg-..."> patterns (star symbols) - CSS will hide, JS will remove */
+        svg use[href^="#svg-"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+        
+        /* Hide Framer Reviews/Stars components immediately */
+        [data-framer-name="Reviews"], 
+        [data-framer-name="Stars"],
+        .framer-1sqwpuo[data-framer-name="Reviews"],
+        .framer-1wp3k9f[data-framer-name="Stars"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            height: 0 !important;
+            width: 0 !important;
+            overflow: hidden !important;
+        }
     </style>
-    <script>
+    <script defer>
         // Performance: Use requestIdleCallback for non-critical operations
         const runWhenIdle = (callback, fallbackDelay = 100) => {
             if ('requestIdleCallback' in window) {
@@ -62,52 +223,55 @@
             }
         };
 
-        // Override Framer's dynamic title changes
+        // Override Framer's dynamic title changes - deferred to not block header
         const originalTitle = "Invoiced - Bitcoin Payments for everyone";
         
-        // Set title immediately
+        // Set title immediately (lightweight operation)
         document.title = originalTitle;
         
-        // Monitor for title changes and override them (optimized)
-        let titleCheckScheduled = false;
-        const checkTitle = () => {
-            if (document.title !== originalTitle) {
-                document.title = originalTitle;
+        // Defer title monitoring to not block header
+        setTimeout(() => {
+            // Monitor for title changes and override them (optimized)
+            let titleCheckScheduled = false;
+            const checkTitle = () => {
+                if (document.title !== originalTitle) {
+                    document.title = originalTitle;
+                }
+                titleCheckScheduled = false;
+            };
+            
+            const observer = new MutationObserver(function(mutations) {
+                if (!titleCheckScheduled) {
+                    titleCheckScheduled = true;
+                    requestAnimationFrame(checkTitle);
+                }
+            });
+            
+            // Start observing
+            observer.observe(document.head, { childList: true, subtree: true });
+            
+            // Also override any direct title changes
+            let titleElement = document.querySelector('title');
+            if (titleElement) {
+                titleElement.textContent = originalTitle;
             }
-            titleCheckScheduled = false;
-        };
-        
-        const observer = new MutationObserver(function(mutations) {
-            if (!titleCheckScheduled) {
-                titleCheckScheduled = true;
-                requestAnimationFrame(checkTitle);
-            }
-        });
-        
-        // Start observing
-        observer.observe(document.head, { childList: true, subtree: true });
-        
-        // Also override any direct title changes
-        let titleElement = document.querySelector('title');
-        if (titleElement) {
-            titleElement.textContent = originalTitle;
-        }
-        
-        // Periodic check to ensure title stays correct (less frequently for performance)
-        // Use requestIdleCallback for non-critical periodic checks
-        const scheduleTitleCheck = () => {
-            runWhenIdle(() => {
-                checkTitle();
-                setTimeout(scheduleTitleCheck, 3000);
-            }, 3000);
-        };
-        scheduleTitleCheck();
+            
+            // Periodic check to ensure title stays correct (less frequently for performance)
+            const scheduleTitleCheck = () => {
+                runWhenIdle(() => {
+                    checkTitle();
+                    setTimeout(scheduleTitleCheck, 5000); // Increased to 5 seconds
+                }, 5000);
+            };
+            setTimeout(scheduleTitleCheck, 2000); // Delay initial check
+        }, 1000); // Defer by 1 second to let header load
 
-        // Mobile scaling fix - cached elements for performance
-        let cachedViewport = null;
-        let cachedMainElement = null;
-        
-        function enforceMobileScaling() {
+        // Mobile scaling fix - deferred to not block header
+        setTimeout(() => {
+            let cachedViewport = null;
+            let cachedMainElement = null;
+            
+            function enforceMobileScaling() {
             if (window.innerWidth <= 809) {
                 // Cache viewport element
                 if (!cachedViewport) {
@@ -164,8 +328,10 @@
         
         // Run after window load
         window.addEventListener('load', enforceMobileScaling);
+        }, 1000); // Defer mobile scaling to not block header
 
-        // Link buttons to dashboard
+        // Link buttons to dashboard - also deferred
+        setTimeout(() => {
         const dashboardUrl = 'https://invoiced-dashboard.vercel.app/';
         
         // Cache button texts for performance
@@ -366,6 +532,7 @@
                 }
             }, 100);
         }
+        }, 1500); // Close setTimeout for button linking - defer to not block header
 
         // Remove "powered by mezo" text
         function removePoweredByMezoText() {
@@ -431,14 +598,401 @@
             });
         }
 
-        // Remove stars and adjacent lines
+        // Remove white and grey horizontal/vertical lines (dedicated function for better detection)
+        function removeWhiteLines() {
+            if (!document.body) return;
+            
+            // First, prioritize hero section for faster removal
+            const heroSections = document.querySelectorAll('[class*="hero" i], [class*="Hero"], main, section, [data-framer-name*="hero" i]');
+            const allElements = document.querySelectorAll('*');
+            
+            // Helper function to check if color is white or light grey
+            const isWhiteOrLightGrey = (color) => {
+                if (!color || color === 'transparent' || color === 'rgba(0, 0, 0, 0)') return false;
+                const lowerColor = color.toLowerCase();
+                
+                // Check for white
+                if (lowerColor.includes('255, 255, 255') || 
+                    lowerColor === 'white' ||
+                    lowerColor === 'rgb(255, 255, 255)' ||
+                    lowerColor.startsWith('rgba(255, 255, 255')) {
+                    return true;
+                }
+                
+                // Check for light grey (RGB values where all components are > 200, or specifically grey)
+                const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                if (rgbMatch) {
+                    const r = parseInt(rgbMatch[1]);
+                    const g = parseInt(rgbMatch[2]);
+                    const b = parseInt(rgbMatch[3]);
+                    // Light grey: all components > 200 and close to each other
+                    if (r > 200 && g > 200 && b > 200 && Math.abs(r - g) < 30 && Math.abs(g - b) < 30) {
+                        return true;
+                    }
+                }
+                
+                // Check for common light grey color names
+                if (lowerColor.includes('lightgrey') || lowerColor.includes('light-gray') || 
+                    lowerColor.includes('gainsboro') || lowerColor.includes('whitesmoke')) {
+                    return true;
+                }
+                
+                return false;
+            };
+            
+            // Process hero sections first
+            heroSections.forEach(section => {
+                if (!section) return;
+                section.querySelectorAll('*').forEach(element => {
+                    const tagName = element.tagName.toLowerCase();
+                    if (['script', 'style', 'meta', 'link', 'title', 'head'].includes(tagName)) return;
+                    
+                    try {
+                        const computedStyle = window.getComputedStyle(element);
+                        const rect = element.getBoundingClientRect();
+                        const bgColor = computedStyle.backgroundColor;
+                        const borderColor = computedStyle.borderTopColor || computedStyle.borderColor || computedStyle.borderLeftColor;
+                        const elementText = (element.textContent || '').trim();
+                        
+                        // Check if it's a line-like element (white or light grey)
+                        const isLine = (
+                            // Horizontal line (thin height, wide width)
+                            (rect.height <= 6 && rect.width > 50 && rect.width > rect.height * 8) ||
+                            // Vertical line (thin width, tall height) 
+                            (rect.width <= 6 && rect.height > 30 && rect.height > rect.width * 8)
+                        ) && (
+                            isWhiteOrLightGrey(bgColor) || isWhiteOrLightGrey(borderColor)
+                        ) && (
+                            // Element should be mostly empty (no significant text)
+                            elementText.length < 5
+                        );
+                        
+                        if (isLine && 
+                            element.tagName !== 'HTML' && 
+                            element.tagName !== 'BODY' && 
+                            element.tagName !== 'HEAD' &&
+                            !element.closest('script') &&
+                            !element.closest('style')) {
+                            element.remove();
+                        }
+                    } catch (e) {
+                        // Ignore errors
+                    }
+                });
+            });
+            
+            // Then process all elements
+            allElements.forEach(element => {
+                // Skip script, style, and other non-interactive elements
+                const tagName = element.tagName.toLowerCase();
+                if (['script', 'style', 'meta', 'link', 'title', 'head', 'html', 'body'].includes(tagName)) return;
+                
+                // Get computed styles to check color
+                let computedStyle;
+                try {
+                    computedStyle = window.getComputedStyle(element);
+                } catch (e) {
+                    return;
+                }
+                
+                const rect = element.getBoundingClientRect();
+                const bgColor = computedStyle.backgroundColor;
+                const borderColor = computedStyle.borderTopColor || computedStyle.borderColor || computedStyle.borderLeftColor;
+                const elementText = (element.textContent || '').trim();
+                
+                // Helper to check white or light grey
+                const isWhiteOrLightGreyColor = (color) => {
+                    if (!color || color === 'transparent' || color === 'rgba(0, 0, 0, 0)') return false;
+                    const lowerColor = color.toLowerCase();
+                    
+                    if (lowerColor.includes('255, 255, 255') || 
+                        lowerColor === 'white' ||
+                        lowerColor === 'rgb(255, 255, 255)' ||
+                        lowerColor.startsWith('rgba(255, 255, 255')) {
+                        return true;
+                    }
+                    
+                    const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                    if (rgbMatch) {
+                        const r = parseInt(rgbMatch[1]);
+                        const g = parseInt(rgbMatch[2]);
+                        const b = parseInt(rgbMatch[3]);
+                        if (r > 200 && g > 200 && b > 200 && Math.abs(r - g) < 30 && Math.abs(g - b) < 30) {
+                            return true;
+                        }
+                    }
+                    
+                    if (lowerColor.includes('lightgrey') || lowerColor.includes('light-gray') || 
+                        lowerColor.includes('gainsboro') || lowerColor.includes('whitesmoke')) {
+                        return true;
+                    }
+                    
+                    return false;
+                };
+                
+                // Check if it's a white or light grey line-like element
+                const isWhiteLine = (
+                    // Horizontal line (thin height, wide width)
+                    (rect.height <= 6 && rect.width > 100 && rect.width > rect.height * 10) ||
+                    // Vertical line (thin width, tall height) 
+                    (rect.width <= 6 && rect.height > 50 && rect.height > rect.width * 10)
+                ) && (
+                    // Check for white/light grey colors
+                    isWhiteOrLightGreyColor(bgColor) || isWhiteOrLightGreyColor(borderColor)
+                ) && (
+                    // Element should be mostly empty (no significant text)
+                    elementText.length < 5
+                );
+                
+                if (isWhiteLine && 
+                    element.tagName !== 'HTML' && 
+                    element.tagName !== 'BODY' && 
+                    element.tagName !== 'HEAD' &&
+                    !element.closest('script') &&
+                    !element.closest('style')) {
+                    
+                    // Also check siblings
+                    let parent = element.parentElement;
+                    if (parent && parent.tagName !== 'BODY' && parent.tagName !== 'HTML') {
+                        // Remove siblings that are also lines
+                        Array.from(parent.children).forEach(sibling => {
+                            if (sibling !== element && sibling.tagName !== 'SCRIPT' && sibling.tagName !== 'STYLE') {
+                                try {
+                                    const siblingStyle = window.getComputedStyle(sibling);
+                                    const siblingRect = sibling.getBoundingClientRect();
+                                    const siblingText = (sibling.textContent || '').trim();
+                                    const siblingBgColor = siblingStyle.backgroundColor;
+                                    
+                                    const isSiblingLine = (
+                                        (siblingRect.height <= 6 && siblingRect.width > 100) ||
+                                        (siblingRect.width <= 6 && siblingRect.height > 50)
+                                    ) && (
+                                        siblingBgColor.includes('255, 255, 255') || 
+                                        siblingBgColor === 'white' ||
+                                        siblingText.length < 5
+                                    );
+                                    
+                                    if (isSiblingLine) {
+                                        sibling.remove();
+                                    }
+                                } catch (e) {
+                                    // Ignore errors
+                                }
+                            }
+                        });
+                    }
+                    
+                    element.remove();
+                }
+            });
+            
+            // Also specifically target HR elements and divs with border/background that look like lines
+            const hrElements = document.querySelectorAll('hr, [class*="line" i], [class*="divider" i], [class*="separator" i]');
+            hrElements.forEach(element => {
+                try {
+                    const style = window.getComputedStyle(element);
+                    const bgColor = style.backgroundColor;
+                    const borderColor = style.borderTopColor || style.borderColor || style.borderLeftColor;
+                    const rect = element.getBoundingClientRect();
+                    
+                    // Check if it's white or light grey
+                    const isLightColor = (color) => {
+                        if (!color || color === 'transparent') return false;
+                        const lower = color.toLowerCase();
+                        if (lower.includes('255, 255, 255') || lower === 'white' || lower.startsWith('rgba(255, 255, 255')) return true;
+                        const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                        if (rgbMatch) {
+                            const r = parseInt(rgbMatch[1]), g = parseInt(rgbMatch[2]), b = parseInt(rgbMatch[3]);
+                            if (r > 200 && g > 200 && b > 200 && Math.abs(r - g) < 30 && Math.abs(g - b) < 30) return true;
+                        }
+                        return false;
+                    };
+                    
+                    // Remove if it's a line-like element with light colors
+                    if ((rect.height <= 6 && rect.width > 50) || (rect.width <= 6 && rect.height > 30)) {
+                        if (isLightColor(bgColor) || isLightColor(borderColor)) {
+                            element.remove();
+                        }
+                    } else {
+                        // For HR elements, remove if light colored
+                        if (element.tagName === 'HR' && (isLightColor(bgColor) || isLightColor(borderColor))) {
+                            element.remove();
+                        }
+                    }
+                } catch (e) {
+                    // Remove HR elements by default, and any line-like elements
+                    const rect = element.getBoundingClientRect();
+                    if (element.tagName === 'HR' || (rect.height <= 6 && rect.width > 50) || (rect.width <= 6 && rect.height > 30)) {
+                        element.remove();
+                    }
+                }
+            });
+        }
+
+        // Remove "Experienced The New Way of Payments" text and nearby lines
+        function removeExperiencedPaymentsText() {
+            if (!document.body) return;
+            
+            const textPatterns = [
+                'Experienced The New Way of Payments',
+                'Experienced the New Way of Payments',
+                'EXPERIENCED THE NEW WAY OF PAYMENTS',
+                'experienced the new way of payments',
+                'New Way of Payments',
+                'new way of payments'
+            ];
+            
+            // Use TreeWalker to find text nodes
+            const walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+            
+            let node;
+            const nodesToProcess = [];
+            while (node = walker.nextNode()) {
+                const text = node.textContent || '';
+                for (let pattern of textPatterns) {
+                    if (text.toLowerCase().includes(pattern.toLowerCase())) {
+                        nodesToProcess.push({ node: node, pattern: pattern });
+                        break;
+                    }
+                }
+            }
+            
+            // Process nodes to remove text and nearby elements
+            nodesToProcess.forEach(({ node, pattern }) => {
+                if (node.parentElement) {
+                    const parent = node.parentElement;
+                    const text = node.textContent;
+                    
+                    // Check if parent element mainly contains this text
+                    const parentText = (parent.textContent || '').trim();
+                    const isMainlyTargetText = textPatterns.some(p => {
+                        const lowerParentText = parentText.toLowerCase();
+                        const lowerPattern = p.toLowerCase();
+                        return lowerParentText.includes(lowerPattern) && 
+                               (lowerParentText.length - lowerParentText.replace(lowerPattern, '').length) / lowerParentText.length > 0.5;
+                    });
+                    
+                    if (isMainlyTargetText && 
+                        parent.tagName !== 'HTML' && 
+                        parent.tagName !== 'BODY' && 
+                        parent.tagName !== 'HEAD' &&
+                        !parent.closest('script') &&
+                        !parent.closest('style')) {
+                        
+                        // Remove adjacent line-like elements before removing parent
+                        let nextSibling = parent.nextElementSibling;
+                        while (nextSibling) {
+                            const siblingRect = nextSibling.getBoundingClientRect();
+                            const siblingText = (nextSibling.textContent || '').trim();
+                            const isLine = (siblingRect.height < 5 && siblingRect.width > 30) || 
+                                          (siblingRect.width < 5 && siblingRect.height > 30) ||
+                                          (siblingText === '' && siblingRect.height < 3);
+                            if (isLine && nextSibling.tagName !== 'SCRIPT' && nextSibling.tagName !== 'STYLE') {
+                                const toRemove = nextSibling;
+                                nextSibling = nextSibling.nextElementSibling;
+                                toRemove.remove();
+                            } else {
+                                break;
+                            }
+                        }
+                        
+                        let prevSibling = parent.previousElementSibling;
+                        while (prevSibling) {
+                            const siblingRect = prevSibling.getBoundingClientRect();
+                            const siblingText = (prevSibling.textContent || '').trim();
+                            const isLine = (siblingRect.height < 5 && siblingRect.width > 30) || 
+                                          (siblingRect.width < 5 && siblingRect.height > 30) ||
+                                          (siblingText === '' && siblingRect.height < 3);
+                            if (isLine && prevSibling.tagName !== 'SCRIPT' && prevSibling.tagName !== 'STYLE') {
+                                const toRemove = prevSibling;
+                                prevSibling = prevSibling.previousElementSibling;
+                                toRemove.remove();
+                            } else {
+                                break;
+                            }
+                        }
+                        
+                        // Remove the parent element containing the text
+                        parent.remove();
+                    } else {
+                        // Just remove the text from the node
+                        const newText = text.replace(new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+                        node.textContent = newText;
+                        
+                        // If text becomes empty, try to remove the parent if it's safe
+                        if (newText === '' && 
+                            parent.tagName !== 'HTML' && 
+                            parent.tagName !== 'BODY' && 
+                            parent.tagName !== 'HEAD' &&
+                            !parent.closest('script') &&
+                            !parent.closest('style')) {
+                            const remainingText = parent.textContent.trim();
+                            if (remainingText === '') {
+                                parent.remove();
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Remove stars and adjacent lines (aggressive removal for hero section)
         function removeStarsAndLines() {
             if (!document.body) return;
             
-            // Find elements containing star characters
-            const starChars = ['★', '☆', '⭐', '✦', '✧', '✩', '✪', '✫', '✬', '✭', '✮', '✯', '✰', '⋆', '⭑', '⭒'];
+            // Find elements containing star characters (expanded list)
+            const starChars = ['★', '☆', '⭐', '✦', '✧', '✩', '✪', '✫', '✬', '✭', '✮', '✯', '✰', '⋆', '⭑', '⭒', '*'];
             
+            // First, prioritize hero section for faster removal
+            const heroSections = document.querySelectorAll('[class*="hero" i], [class*="Hero"], main, section, [data-framer-name*="hero" i]');
             const allElements = document.querySelectorAll('*');
+            
+            // Process hero sections first for immediate removal
+            heroSections.forEach(section => {
+                if (!section) return;
+                section.querySelectorAll('*').forEach(element => {
+                    const tagName = element.tagName.toLowerCase();
+                    if (['script', 'style', 'meta', 'link', 'title', 'head'].includes(tagName)) return;
+                    
+                    const text = element.textContent || '';
+                    const containsStar = starChars.some(star => text.includes(star));
+                    
+                    if (containsStar) {
+                        const textTrimmed = text.trim();
+                        // Check if element is mainly or only stars
+                        const starCount = starChars.reduce((count, star) => {
+                            return count + (text.split(star).length - 1);
+                        }, 0);
+                        
+                        // If mostly stars or only stars, remove entire element
+                        if (starCount >= textTrimmed.length * 0.5 || textTrimmed.length < 10) {
+                            const parent = element.parentElement;
+                            if (parent && 
+                                parent.tagName !== 'HTML' && 
+                                parent.tagName !== 'BODY' && 
+                                parent.tagName !== 'HEAD' &&
+                                !parent.closest('script') &&
+                                !parent.closest('style')) {
+                                element.remove();
+                            }
+                        } else {
+                            // Remove just the stars
+                            let newText = text;
+                            starChars.forEach(star => {
+                                newText = newText.replace(new RegExp(star.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '');
+                            });
+                            element.textContent = newText.trim();
+                        }
+                    }
+                });
+            });
+            
+            // Then process all other elements
             
             allElements.forEach(element => {
                 // Skip script, style, and other non-interactive elements
@@ -520,17 +1074,41 @@
             });
         }
 
-        // Monitor for dynamically added content
+        // Monitor for dynamically added content (optimized with debouncing)
+        let contentRemovalTimeout = null;
         function setupContentRemovalObserver() {
             if (!document.body) return null;
             
-            const observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.addedNodes.length > 0 || mutation.type === 'characterData') {
+            const debouncedRemoval = () => {
+                if (contentRemovalTimeout) clearTimeout(contentRemovalTimeout);
+                contentRemovalTimeout = setTimeout(() => {
+                    // Use requestIdleCallback to avoid blocking hero rendering
+                    runWhenIdle(() => {
+                        aggressiveRemoveStarsAndLines();
                         removePoweredByMezoText();
                         removeStarsAndLines();
+                        removeExperiencedPaymentsText();
+                        removeWhiteLines();
+                    }, 100);
+                }, 150); // Increased debounce to avoid blocking hero
+            };
+            
+            const observer = new MutationObserver(function(mutations) {
+                // Only process if there are actual content changes
+                let hasRelevantChanges = false;
+                mutations.forEach(function(mutation) {
+                    if (mutation.addedNodes.length > 0 || mutation.type === 'characterData') {
+                        hasRelevantChanges = true;
                     }
                 });
+                
+                if (hasRelevantChanges) {
+                    debouncedRemoval();
+                    // Immediate targeted check for stars below start today button
+                    removeStarsBelowStartTodayButton();
+                    // Immediate check for stars and lines when content changes
+                    aggressiveRemoveStarsAndLines();
+                }
             });
             
             observer.observe(document.body, {
@@ -542,37 +1120,538 @@
             return observer;
         }
 
-        // Defer content removal until after initial render for faster hero load
+        // AGGRESSIVE IMMEDIATE REMOVAL - Runs as soon as DOM is available
+        const aggressiveRemoveStarsAndLines = () => {
+            if (!document.body) return;
+            
+            const starChars = ['★', '☆', '⭐', '✦', '✧', '✩', '✪', '✫', '✬', '✭', '✮', '✯', '✰', '⋆', '⭑', '⭒'];
+            
+            // First, use TreeWalker to find ALL text nodes containing stars and remove their parent elements
+            const walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+            
+            const nodesToRemove = [];
+            let node;
+            while (node = walker.nextNode()) {
+                const text = node.textContent || '';
+                if (starChars.some(star => text.includes(star))) {
+                    if (node.parentElement) {
+                        nodesToRemove.push(node.parentElement);
+                    }
+                }
+            }
+            
+            // Remove all elements containing stars
+            nodesToRemove.forEach(element => {
+                try {
+                    if (element.tagName !== 'HTML' && 
+                        element.tagName !== 'BODY' && 
+                        element.tagName !== 'HEAD' &&
+                        !element.closest('script') &&
+                        !element.closest('style')) {
+                        element.remove();
+                    }
+                } catch (e) {}
+            });
+            
+            // Also check all elements directly
+            const allElements = document.querySelectorAll('*');
+            
+            allElements.forEach(element => {
+                try {
+                    const tagName = element.tagName.toLowerCase();
+                    if (['script', 'style', 'meta', 'link', 'title', 'head', 'html', 'body'].includes(tagName)) return;
+                    
+                    // Check text content for stars - REMOVE ANY ELEMENT WITH STARS
+                    const text = (element.textContent || '').trim();
+                    const hasStars = starChars.some(star => text.includes(star));
+                    
+                    if (hasStars) {
+                        // Remove element containing stars - no conditions, just remove it
+                        if (element.tagName !== 'HTML' && 
+                            element.tagName !== 'BODY' && 
+                            element.tagName !== 'HEAD' &&
+                            !element.closest('script') &&
+                            !element.closest('style')) {
+                            element.remove();
+                            return;
+                        }
+                    }
+                    
+                    // Also check if element's innerHTML contains stars (covers more cases)
+                    const innerHTML = element.innerHTML || '';
+                    if (starChars.some(star => innerHTML.includes(star))) {
+                        const rect = element.getBoundingClientRect();
+                        // If it's a small decorative element, remove it
+                        if (rect.width < 200 || rect.height < 50) {
+                            if (element.tagName !== 'HTML' && 
+                                element.tagName !== 'BODY' && 
+                                element.tagName !== 'HEAD' &&
+                                !element.closest('script') &&
+                                !element.closest('style')) {
+                                element.remove();
+                                return;
+                            }
+                        }
+                    }
+                    
+                    // Check for decorative lines (thin elements)
+                    const rect = element.getBoundingClientRect();
+                    const style = window.getComputedStyle(element);
+                    const bgColor = style.backgroundColor;
+                    
+                    // Remove thin horizontal or vertical lines (more aggressive)
+                    if ((rect.height <= 5 && rect.width > 30) || (rect.width <= 5 && rect.height > 20)) {
+                        // Check if it's white/grey/transparent or just remove if very thin
+                        if (!bgColor || bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)' || 
+                            bgColor.includes('255, 255, 255') || bgColor.toLowerCase().includes('rgb(200') ||
+                            bgColor.toLowerCase().includes('rgb(220') || bgColor.toLowerCase().includes('rgb(240')) {
+                            if (text.length < 10) {
+                                element.remove();
+                            }
+                        }
+                    }
+                    
+                    // Remove elements that are siblings of star-containing elements (lines below/above stars)
+                    const parent = element.parentElement;
+                    if (parent) {
+                        const siblings = Array.from(parent.children);
+                        const hasStarSibling = siblings.some(sib => {
+                            if (sib === element) return false;
+                            const sibText = (sib.textContent || '').trim();
+                            const sibHTML = (sib.innerHTML || '').trim();
+                            return starChars.some(star => sibText.includes(star) || sibHTML.includes(star));
+                        });
+                        
+                        if (hasStarSibling) {
+                            // If this element is a thin line-like element near stars, remove it
+                            if ((rect.height <= 8 && rect.width > 20) || (rect.width <= 8 && rect.height > 15)) {
+                                element.remove();
+                                return;
+                            }
+                            // Also remove if it's just whitespace/empty and near stars
+                            if (text.length < 5 && (rect.height < 10 || rect.width < 10)) {
+                                element.remove();
+                                return;
+                            }
+                        }
+                        
+                        // Check if this element comes after a star element
+                        const elementIndex = siblings.indexOf(element);
+                        for (let i = elementIndex - 1; i >= 0 && i >= elementIndex - 3; i--) {
+                            const prevSib = siblings[i];
+                            if (prevSib) {
+                                const prevText = (prevSib.textContent || '').trim();
+                                const prevHTML = (prevSib.innerHTML || '').trim();
+                                if (starChars.some(star => prevText.includes(star) || prevHTML.includes(star))) {
+                                    // This element comes after stars, if it's a line, remove it
+                                    if ((rect.height <= 8 && rect.width > 20) || (rect.width <= 8 && rect.height > 15) || text.length < 5) {
+                                        element.remove();
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // Ignore errors
+                }
+            });
+            
+            // Also remove parent containers that have stars as children
+            allElements.forEach(element => {
+                try {
+                    if (['script', 'style', 'meta', 'link', 'title', 'head', 'html', 'body'].includes(element.tagName.toLowerCase())) return;
+                    
+                    const children = element.children;
+                    let hasStarChild = false;
+                    for (let child of children) {
+                        const childText = (child.textContent || '').trim();
+                        if (starChars.some(star => childText.includes(star))) {
+                            hasStarChild = true;
+                            break;
+                        }
+                    }
+                    
+                    if (hasStarChild) {
+                        const rect = element.getBoundingClientRect();
+                        // If container is small or decorative, remove it
+                        if (rect.width < 300 && rect.height < 100) {
+                            if (element.tagName !== 'HTML' && 
+                                element.tagName !== 'BODY' && 
+                                element.tagName !== 'HEAD' &&
+                                !element.closest('script') &&
+                                !element.closest('style')) {
+                                element.remove();
+                            }
+                        }
+                    }
+                } catch (e) {}
+            });
+            
+            // Also remove all HR elements and elements with line/divider classes
+            document.querySelectorAll('hr, [class*="line" i], [class*="divider" i], [class*="separator" i]').forEach(el => {
+                try {
+                    el.remove();
+                } catch (e) {}
+            });
+            
+            // Check for SVG elements that might contain star shapes or lines
+            document.querySelectorAll('svg, path, line, polyline, polygon').forEach(svgEl => {
+                try {
+                    // First, check if it's an SVG with <use> elements referencing symbols (star patterns)
+                    if (svgEl.tagName === 'svg') {
+                        const useElements = svgEl.querySelectorAll('use');
+                        let shouldRemove = false;
+                        useElements.forEach(useEl => {
+                            const href = useEl.getAttribute('href') || useEl.getAttribute('xlink:href') || '';
+                            // If it references a symbol with #svg- pattern, remove it (likely stars)
+                            if (href.startsWith('#svg-')) {
+                                shouldRemove = true;
+                            }
+                        });
+                        // Also check viewBox pattern for star rows (0 0 118 24 pattern)
+                        const viewBox = svgEl.getAttribute('viewBox');
+                        if (viewBox && useElements.length > 0) {
+                            const parts = viewBox.split(' ');
+                            if (parts.length >= 4) {
+                                const width = parseFloat(parts[2]);
+                                const height = parseFloat(parts[3]);
+                                // Pattern like "0 0 118 24" is typical for decorative star rows
+                                if ((width > 100 && height < 30) || (width < 200 && height < 50 && useElements.length > 0)) {
+                                    shouldRemove = true;
+                                }
+                            }
+                        }
+                        if (shouldRemove) {
+                            svgEl.remove();
+                            return;
+                        }
+                    }
+                    
+                    const rect = svgEl.getBoundingClientRect();
+                    // Remove small decorative SVG elements
+                    if (rect.width <= 10 || rect.height <= 10 || 
+                        (rect.width <= 3 && rect.height > 20) || 
+                        (rect.height <= 3 && rect.width > 20)) {
+                        svgEl.remove();
+                    }
+                    // Check if SVG contains star-like path data
+                    if (svgEl.tagName === 'path') {
+                        const d = svgEl.getAttribute('d') || '';
+                        // Star-like paths often have multiple M commands or specific patterns
+                        if (d.split('M').length > 5 || d.includes('star') || d.includes('Star')) {
+                            const parent = svgEl.closest('svg');
+                            if (parent && parent.getBoundingClientRect().width < 100) {
+                                parent.remove();
+                            }
+                        }
+                    }
+                } catch (e) {}
+            });
+            
+            // Remove SVG symbol definitions that might be used for stars
+            document.querySelectorAll('symbol[id*="svg-"]').forEach(symbol => {
+                try {
+                    symbol.remove();
+                } catch (e) {}
+            });
+            
+            // Remove Framer Reviews/Stars components
+            document.querySelectorAll('[data-framer-name="Reviews"], [data-framer-name="Stars"]').forEach(el => {
+                try {
+                    el.remove();
+                } catch (e) {}
+            });
+            
+            // Remove elements with Framer star-related classes
+            document.querySelectorAll('.framer-1sqwpuo[data-framer-name="Reviews"], .framer-1wp3k9f[data-framer-name="Stars"]').forEach(el => {
+                try {
+                    el.remove();
+                } catch (e) {}
+            });
+            
+            // Remove any image elements that might be decorative stars/lines
+            document.querySelectorAll('img[alt*="star" i], img[src*="star" i], img[class*="star" i]').forEach(img => {
+                try {
+                    const rect = img.getBoundingClientRect();
+                    if (rect.width < 50 && rect.height < 50) {
+                        img.remove();
+                    }
+                } catch (e) {}
+            });
+        };
+
+        // FAST TARGETED REMOVAL - Specifically for stars below "Start Today" button
+        const removeStarsBelowStartTodayButton = () => {
+            if (!document.body) return;
+            
+            const starChars = ['★', '☆', '⭐', '✦', '✧', '✩', '✪', '✫', '✬', '✭', '✮', '✯', '✰', '⋆', '⭑', '⭒'];
+            
+            // Remove Framer Reviews/Stars component immediately
+            document.querySelectorAll('[data-framer-name="Reviews"], [data-framer-name="Stars"]').forEach(el => {
+                try {
+                    el.remove();
+                } catch (e) {}
+            });
+            
+            // Also remove elements with specific Framer classes that contain stars
+            document.querySelectorAll('.framer-1sqwpuo, .framer-1wp3k9f').forEach(el => {
+                try {
+                    // Check if it's the Reviews component or contains Stars
+                    const hasReviews = el.getAttribute('data-framer-name') === 'Reviews';
+                    const hasStars = el.getAttribute('data-framer-name') === 'Stars' || 
+                                    el.querySelector('[data-framer-name="Stars"]');
+                    const hasStarsClass = el.classList.contains('framer-1wp3k9f');
+                    
+                    if (hasReviews || hasStars || hasStarsClass) {
+                        el.remove();
+                    }
+                } catch (e) {}
+            });
+            
+            // Remove parent containers of Stars components
+            document.querySelectorAll('[data-framer-name="Stars"]').forEach(starsEl => {
+                try {
+                    // Remove the Stars element itself
+                    starsEl.remove();
+                    // Also try to remove parent if it's the Reviews container
+                    const parent = starsEl.closest('[data-framer-name="Reviews"], .framer-1sqwpuo');
+                    if (parent) {
+                        parent.remove();
+                    }
+                } catch (e) {}
+            });
+            
+            // Find all buttons/elements with "start today" text
+            const allElements = document.querySelectorAll('button, a, div, span, p');
+            const startTodayElements = [];
+            
+            allElements.forEach(el => {
+                const text = (el.textContent || '').toLowerCase().trim();
+                if (text.includes('start today') || text === 'start today') {
+                    startTodayElements.push(el);
+                }
+            });
+            
+            // For each "start today" element, remove stars in next siblings and nearby
+            startTodayElements.forEach(startBtn => {
+                try {
+                    const parent = startBtn.parentElement;
+                    if (!parent) return;
+                    
+                    // Remove next sibling elements that contain stars
+                    let nextSibling = startBtn.nextElementSibling;
+                    let checkCount = 0;
+                    while (nextSibling && checkCount < 5) { // Check up to 5 next siblings
+                        // Check for SVG elements with star symbols (like <use href="#svg-...star...">)
+                        const svgElements = nextSibling.querySelectorAll('svg');
+                        svgElements.forEach(svg => {
+                            // Check if SVG uses a symbol reference
+                            const useElements = svg.querySelectorAll('use');
+                            useElements.forEach(useEl => {
+                                const href = useEl.getAttribute('href') || useEl.getAttribute('xlink:href') || '';
+                                // If it references a symbol, remove the SVG (likely a star)
+                                if (href.startsWith('#svg-') || href.includes('svg-')) {
+                                    const rect = svg.getBoundingClientRect();
+                                    // If it's a small decorative SVG (likely stars), remove it
+                                    if (rect.width < 200 && rect.height < 100) {
+                                        svg.closest('svg')?.remove() || svg.remove();
+                                    }
+                                }
+                            });
+                        });
+                        
+                        // Also check if the sibling itself is an SVG
+                        if (nextSibling.tagName === 'svg') {
+                            const useElements = nextSibling.querySelectorAll('use');
+                            useElements.forEach(useEl => {
+                                const href = useEl.getAttribute('href') || useEl.getAttribute('xlink:href') || '';
+                                if (href.startsWith('#svg-') || href.includes('svg-')) {
+                                    nextSibling.remove();
+                                    return;
+                                }
+                            });
+                        }
+                        
+                        const sibText = (nextSibling.textContent || '').trim();
+                        const sibHTML = (nextSibling.innerHTML || '').trim();
+                        
+                        // If it contains stars, remove it
+                        if (starChars.some(star => sibText.includes(star) || sibHTML.includes(star))) {
+                            nextSibling.remove();
+                            break; // Found and removed, stop
+                        }
+                        
+                        // Also check children of next sibling for stars
+                        const hasStarChild = nextSibling.querySelectorAll('*').some(child => {
+                            const childText = (child.textContent || '').trim();
+                            const childHTML = (child.innerHTML || '').trim();
+                            return starChars.some(star => childText.includes(star) || childHTML.includes(star));
+                        });
+                        
+                        if (hasStarChild) {
+                            nextSibling.remove();
+                            break;
+                        }
+                        
+                        nextSibling = nextSibling.nextElementSibling;
+                        checkCount++;
+                    }
+                    
+                    // Also check parent's next siblings (in case button is in a container)
+                    let parentSibling = parent.nextElementSibling;
+                    checkCount = 0;
+                    while (parentSibling && checkCount < 3) {
+                        // Check for SVG elements in parent siblings too
+                        const svgElements = parentSibling.querySelectorAll('svg');
+                        svgElements.forEach(svg => {
+                            const useElements = svg.querySelectorAll('use');
+                            useElements.forEach(useEl => {
+                                const href = useEl.getAttribute('href') || useEl.getAttribute('xlink:href') || '';
+                                if (href.startsWith('#svg-') || href.includes('svg-')) {
+                                    const rect = svg.getBoundingClientRect();
+                                    if (rect.width < 200 && rect.height < 100) {
+                                        svg.closest('svg')?.remove() || svg.remove();
+                                    }
+                                }
+                            });
+                        });
+                        
+                        const sibText = (parentSibling.textContent || '').trim();
+                        const sibHTML = (parentSibling.innerHTML || '').trim();
+                        
+                        if (starChars.some(star => sibText.includes(star) || sibHTML.includes(star))) {
+                            parentSibling.remove();
+                            break;
+                        }
+                        parentSibling = parentSibling.nextElementSibling;
+                        checkCount++;
+                    }
+                } catch (e) {
+                    // Ignore errors
+                }
+            });
+            
+            // Also remove ALL SVG elements with <use href="#svg-..."> patterns (star symbols)
+            // Remove ANY SVG that uses symbol references - these are decorative stars
+            document.querySelectorAll('svg').forEach(svg => {
+                try {
+                    const useElements = svg.querySelectorAll('use');
+                    useElements.forEach(useEl => {
+                        const href = useEl.getAttribute('href') || useEl.getAttribute('xlink:href') || '';
+                        // If it uses a symbol reference starting with #svg-, remove the entire SVG immediately
+                        if (href.startsWith('#svg-')) {
+                            svg.remove();
+                            return;
+                        }
+                    });
+                    
+                    // Also check the SVG element's attributes
+                    const viewBox = svg.getAttribute('viewBox');
+                    // The pattern you showed has viewBox="0 0 118 24" which is typical for star rows
+                    if (viewBox && viewBox.includes('0 0 118') || viewBox && viewBox.includes('0 0') && parseFloat(viewBox.split(' ')[3]) < 30) {
+                        const useElements = svg.querySelectorAll('use');
+                        if (useElements.length > 0) {
+                            svg.remove();
+                        }
+                    }
+                } catch (e) {}
+            });
+        };
+
+        // Run immediately when DOM is ready, then continuously
+        const runImmediateCleanup = () => {
+            removeStarsBelowStartTodayButton(); // Run this first for fast targeted removal
+            aggressiveRemoveStarsAndLines();
+            removeExperiencedPaymentsText();
+            removeWhiteLines();
+        };
+
+        // Defer ALL cleanup operations - prioritize header/hero loading
+        // Don't run cleanup until header is fully loaded
+        const runAfterHeaderLoad = () => {
+            // Wait for header to be visible before running any cleanup
+            const checkHeaderAndCleanup = () => {
+                const headerElements = document.querySelectorAll('header, nav, [class*="header" i], [data-framer-name*="header" i]');
+                const headerVisible = headerElements.length > 0 || document.readyState === 'complete';
+                
+                if (headerVisible) {
+                    // Header is loaded, wait a bit more then run cleanup
+                    setTimeout(() => {
+                        runImmediateCleanup();
+                    }, 500); // Additional delay after header loads
+                } else {
+                    // Check again after a short delay
+                    setTimeout(checkHeaderAndCleanup, 100);
+                }
+            };
+            
+            // Start checking after initial delay to let header render first
+            setTimeout(checkHeaderAndCleanup, 300);
+        };
+        
+        runAfterHeaderLoad();
+        
+        // Run continuously but with much longer interval to not block header
+        const continuousCleanup = () => {
+            runImmediateCleanup();
+            setTimeout(continuousCleanup, 2000); // Much longer: Check every 2 seconds
+        };
+        setTimeout(continuousCleanup, 2000); // Start after 2 seconds to ensure header loads first
+
+        // Also run the full cleanup with delays
         runWhenIdle(() => {
             removePoweredByMezoText();
             removeStarsAndLines();
+            removeExperiencedPaymentsText();
+            removeWhiteLines();
         }, 100);
         
-        // Run after DOM is loaded (defer for performance)
+        // Run after DOM is loaded - but delay to prioritize hero rendering
         document.addEventListener('DOMContentLoaded', function() {
-            runWhenIdle(() => {
+            // Delay cleanup to allow hero to render first
+            setTimeout(() => {
+                runImmediateCleanup();
+                // Setup observer with delay
+                setTimeout(() => {
                 removePoweredByMezoText();
                 removeStarsAndLines();
+                    removeExperiencedPaymentsText();
+                    removeWhiteLines();
                 setupContentRemovalObserver();
-            }, 200);
+                }, 300); // Increased delay for hero priority
+            }, 400); // Initial delay for hero section
         });
         
         // Run after window load
         window.addEventListener('load', function() {
-            runWhenIdle(() => {
+            runImmediateCleanup();
+            setTimeout(() => {
                 removePoweredByMezoText();
                 removeStarsAndLines();
-                setupContentRemovalObserver();
-            }, 100);
+                removeExperiencedPaymentsText();
+                removeWhiteLines();
+            }, 50);
         });
         
-        // Run periodically to catch any missed instances (less frequently for performance)
+        // Run periodically to catch any missed instances - but after hero loads
         const scheduleContentRemoval = () => {
-            runWhenIdle(() => {
+            // Only run cleanup after initial hero load delay
+            setTimeout(() => {
+                runImmediateCleanup();
+                setTimeout(() => {
                 removePoweredByMezoText();
                 removeStarsAndLines();
-                setTimeout(scheduleContentRemoval, 2000);
-            }, 2000);
+                    removeExperiencedPaymentsText();
+                    removeWhiteLines();
+                    scheduleContentRemoval();
+                }, 2000); // Increased to 2 seconds to reduce load
+            }, 1500); // Initial delay to let hero load
         };
         scheduleContentRemoval();
         
