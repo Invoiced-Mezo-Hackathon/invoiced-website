@@ -212,6 +212,16 @@
             width: 0 !important;
             overflow: hidden !important;
         }
+        
+        /* Ensure FAQ content is always visible and never removed */
+        [data-framer-name*="FAQ" i], [data-framer-name*="faq" i], 
+        [class*="faq" i], [class*="FAQ" i],
+        section:has([data-framer-name*="FAQ" i]),
+        section:has([data-framer-name*="faq" i]) {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
     </style>
     <script defer>
         // Performance: Use requestIdleCallback for non-critical operations
@@ -330,18 +340,21 @@
         window.addEventListener('load', enforceMobileScaling);
         }, 1000); // Defer mobile scaling to not block header
 
-        // Link buttons to dashboard - also deferred
+        // Link buttons to waitlist - also deferred
         setTimeout(() => {
-        const dashboardUrl = 'https://invoiced-dashboard.vercel.app/';
+        const waitlistUrl = 'https://invoiced-waitlist-signup.vercel.app/';
         
         // Cache button texts for performance
         const buttonTexts = [
             'get started',
             'Get Started',
             'GET STARTED',
-            'start today',
-            'Start Today',
-            'START TODAY',
+            'join the waitlist',
+            'Join the Waitlist',
+            'JOIN THE WAITLIST',
+            'join waitlist',
+            'Join Waitlist',
+            'JOIN WAITLIST',
             'create invoice now',
             'Create Invoice now',
             'Create Invoice Now',
@@ -354,7 +367,7 @@
         // Helper function to process an element for button linking
         function processElement(element) {
             // Skip if already processed or linked
-            if (element.getAttribute('data-linked-to-dashboard') === 'true') return;
+            if (element.getAttribute('data-linked-to-waitlist') === 'true') return;
             if (element.tagName === 'BUTTON' || element.tagName === 'A' || element.getAttribute('role') === 'button') return;
             
             // Skip script, style, and other non-interactive elements
@@ -376,15 +389,15 @@
                                      style.display !== 'none' ||
                                      element.classList.toString().toLowerCase().includes('button');
                 
-                if (isLikelyButton || textLower === 'get started' || textLower === 'start today' || textLower.includes('create invoice now')) {
+                if (isLikelyButton || textLower === 'get started' || textLower === 'join the waitlist' || textLower === 'join waitlist' || textLower.includes('create invoice now')) {
                     // Mark as linked
-                    element.setAttribute('data-linked-to-dashboard', 'true');
+                    element.setAttribute('data-linked-to-waitlist', 'true');
                     
                     // Add click handler
                     const clickHandler = function(e) {
                         e.preventDefault();
                         e.stopPropagation();
-                        window.location.href = dashboardUrl;
+                        window.location.href = waitlistUrl;
                         return false;
                     };
                     
@@ -403,11 +416,11 @@
             
             buttonLikeElements.forEach(element => {
                 // Skip if already linked
-                if (element.getAttribute('data-linked-to-dashboard') === 'true') return;
+                if (element.getAttribute('data-linked-to-waitlist') === 'true') return;
                 
-                // Skip if has existing href/onclick that's not our dashboard link
+                // Skip if has existing href/onclick that's not our waitlist link
                 const existingHref = element.getAttribute('href');
-                if (existingHref && !existingHref.includes('invoiced-dashboard')) {
+                if (existingHref && !existingHref.includes('invoiced-waitlist-signup')) {
                     // Check if text matches our buttons
                     const text = (element.textContent || '').trim().toLowerCase();
                     const isTargetButton = buttonTexts.some(buttonText => 
@@ -425,13 +438,13 @@
                 
                 if (isTargetButton) {
                     // Mark as linked
-                    element.setAttribute('data-linked-to-dashboard', 'true');
+                    element.setAttribute('data-linked-to-waitlist', 'true');
                     
                     // Add click handler
                     const clickHandler = function(e) {
                         e.preventDefault();
                         e.stopPropagation();
-                        window.location.href = dashboardUrl;
+                        window.location.href = waitlistUrl;
                         return false;
                     };
                     
@@ -534,6 +547,47 @@
         }
         }, 1500); // Close setTimeout for button linking - defer to not block header
 
+        // Global FAQ protection function - used by all removal functions
+        const isFAQContent = (element) => {
+            if (!element) return false;
+            const text = (element.textContent || '').toLowerCase();
+            const framerName = (element.getAttribute('data-framer-name') || '').toLowerCase();
+            const className = (element.className || '').toLowerCase();
+            return text.includes('faq') || text.includes('frequently asked') || 
+                   framerName.includes('faq') || className.includes('faq') ||
+                   element.closest('[data-framer-name*="FAQ" i], [data-framer-name*="faq" i], [class*="faq" i]');
+        };
+        
+        // Ensure FAQ content is never removed - restore if hidden
+        const protectFAQContent = () => {
+            if (!document.body) return;
+            
+            // Find all FAQ elements and ensure they're visible
+            const faqElements = document.querySelectorAll('[data-framer-name*="FAQ" i], [data-framer-name*="faq" i], [class*="faq" i], [class*="FAQ" i]');
+            faqElements.forEach(el => {
+                try {
+                    el.style.display = '';
+                    el.style.visibility = '';
+                    el.style.opacity = '';
+                    el.style.height = '';
+                    el.style.width = '';
+                } catch (e) {}
+            });
+            
+            // Also check for FAQ sections by text content
+            const allSections = document.querySelectorAll('section, div, main');
+            allSections.forEach(section => {
+                const text = (section.textContent || '').toLowerCase();
+                if (text.includes('faq') || text.includes('frequently asked')) {
+                    try {
+                        section.style.display = '';
+                        section.style.visibility = '';
+                        section.style.opacity = '';
+                    } catch (e) {}
+                }
+            });
+        };
+
         // Remove "powered by mezo" text
         function removePoweredByMezoText() {
             if (!document.body) return;
@@ -566,16 +620,19 @@
                 }
             }
             
-            // Process nodes to remove text
+            // Process nodes to remove text (but NEVER remove FAQ)
             nodesToProcess.forEach(({ node, pattern }) => {
                 if (node.parentElement) {
+                    // NEVER remove FAQ content
+                    if (isFAQContent(node.parentElement)) return;
+                    
                     const text = node.textContent;
                     const newText = text.replace(new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
                     
                     if (newText === '') {
-                        // If text becomes empty, try to remove the parent element if safe
+                        // If text becomes empty, try to remove the parent element if safe (but NOT FAQ)
                         const parent = node.parentElement;
-                        if (parent && 
+                        if (parent && !isFAQContent(parent) &&
                             parent.tagName !== 'HTML' && 
                             parent.tagName !== 'BODY' && 
                             parent.tagName !== 'HEAD' && 
@@ -598,7 +655,7 @@
             });
         }
 
-        // Remove white and grey horizontal/vertical lines (dedicated function for better detection)
+        // Remove white and grey horizontal/vertical lines (dedicated function for better detection) - but NEVER FAQ
         function removeWhiteLines() {
             if (!document.body) return;
             
@@ -640,10 +697,13 @@
                 return false;
             };
             
-            // Process hero sections first
+            // Process hero sections first (but NEVER FAQ)
             heroSections.forEach(section => {
-                if (!section) return;
+                if (!section || isFAQContent(section)) return; // Skip FAQ sections
                 section.querySelectorAll('*').forEach(element => {
+                    // NEVER remove FAQ content
+                    if (isFAQContent(element)) return;
+                    
                     const tagName = element.tagName.toLowerCase();
                     if (['script', 'style', 'meta', 'link', 'title', 'head'].includes(tagName)) return;
                     
@@ -667,7 +727,7 @@
                             elementText.length < 5
                         );
                         
-                        if (isLine && 
+                        if (isLine && !isFAQContent(element) &&
                             element.tagName !== 'HTML' && 
                             element.tagName !== 'BODY' && 
                             element.tagName !== 'HEAD' &&
@@ -681,8 +741,11 @@
                 });
             });
             
-            // Then process all elements
+            // Then process all elements (but NEVER FAQ)
             allElements.forEach(element => {
+                // NEVER remove FAQ content
+                if (isFAQContent(element)) return;
+                
                 // Skip script, style, and other non-interactive elements
                 const tagName = element.tagName.toLowerCase();
                 if (['script', 'style', 'meta', 'link', 'title', 'head', 'html', 'body'].includes(tagName)) return;
@@ -829,7 +892,7 @@
             });
         }
 
-        // Remove "Experienced The New Way of Payments" text and nearby lines
+        // Remove "Experienced The New Way of Payments" text and nearby lines (but NEVER FAQ)
         function removeExperiencedPaymentsText() {
             if (!document.body) return;
             
@@ -866,6 +929,10 @@
             nodesToProcess.forEach(({ node, pattern }) => {
                 if (node.parentElement) {
                     const parent = node.parentElement;
+                    
+                    // NEVER remove FAQ content
+                    if (isFAQContent(parent)) return;
+                    
                     const text = node.textContent;
                     
                     // Check if parent element mainly contains this text
@@ -877,16 +944,18 @@
                                (lowerParentText.length - lowerParentText.replace(lowerPattern, '').length) / lowerParentText.length > 0.5;
                     });
                     
-                    if (isMainlyTargetText && 
+                    if (isMainlyTargetText && !isFAQContent(parent) &&
                         parent.tagName !== 'HTML' && 
                         parent.tagName !== 'BODY' && 
                         parent.tagName !== 'HEAD' &&
                         !parent.closest('script') &&
                         !parent.closest('style')) {
                         
-                        // Remove adjacent line-like elements before removing parent
+                        // Remove adjacent line-like elements before removing parent (but NOT FAQ siblings)
                         let nextSibling = parent.nextElementSibling;
                         while (nextSibling) {
+                            if (isFAQContent(nextSibling)) break; // Don't remove FAQ siblings
+                            
                             const siblingRect = nextSibling.getBoundingClientRect();
                             const siblingText = (nextSibling.textContent || '').trim();
                             const isLine = (siblingRect.height < 5 && siblingRect.width > 30) || 
@@ -903,10 +972,12 @@
                         
                         let prevSibling = parent.previousElementSibling;
                         while (prevSibling) {
+                            if (isFAQContent(prevSibling)) break; // Don't remove FAQ siblings
+                            
                             const siblingRect = prevSibling.getBoundingClientRect();
                             const siblingText = (prevSibling.textContent || '').trim();
                             const isLine = (siblingRect.height < 5 && siblingRect.width > 30) || 
-                                          (siblingRect.width < 5 && siblingRect.height > 30) ||
+                                          (siblingRect.width < 5 && prevSibling.height > 30) ||
                                           (siblingText === '' && siblingRect.height < 3);
                             if (isLine && prevSibling.tagName !== 'SCRIPT' && prevSibling.tagName !== 'STYLE') {
                                 const toRemove = prevSibling;
@@ -917,23 +988,27 @@
                             }
                         }
                         
-                        // Remove the parent element containing the text
-                        parent.remove();
+                        // Remove the parent element containing the text (but NOT if it's FAQ)
+                        if (!isFAQContent(parent)) {
+                            parent.remove();
+                        }
                     } else {
-                        // Just remove the text from the node
-                        const newText = text.replace(new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
-                        node.textContent = newText;
-                        
-                        // If text becomes empty, try to remove the parent if it's safe
-                        if (newText === '' && 
-                            parent.tagName !== 'HTML' && 
-                            parent.tagName !== 'BODY' && 
-                            parent.tagName !== 'HEAD' &&
-                            !parent.closest('script') &&
-                            !parent.closest('style')) {
-                            const remainingText = parent.textContent.trim();
-                            if (remainingText === '') {
-                                parent.remove();
+                        // Just remove the text from the node (but NEVER if it's FAQ)
+                        if (!isFAQContent(parent)) {
+                            const newText = text.replace(new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+                            node.textContent = newText;
+                            
+                            // If text becomes empty, try to remove the parent if it's safe (but NOT FAQ)
+                            if (newText === '' && !isFAQContent(parent) &&
+                                parent.tagName !== 'HTML' && 
+                                parent.tagName !== 'BODY' && 
+                                parent.tagName !== 'HEAD' &&
+                                !parent.closest('script') &&
+                                !parent.closest('style')) {
+                                const remainingText = parent.textContent.trim();
+                                if (remainingText === '') {
+                                    parent.remove();
+                                }
                             }
                         }
                     }
@@ -941,7 +1016,7 @@
             });
         }
 
-        // Remove stars and adjacent lines (aggressive removal for hero section)
+        // Remove stars and adjacent lines (aggressive removal for hero section) - but NEVER FAQ
         function removeStarsAndLines() {
             if (!document.body) return;
             
@@ -952,10 +1027,13 @@
             const heroSections = document.querySelectorAll('[class*="hero" i], [class*="Hero"], main, section, [data-framer-name*="hero" i]');
             const allElements = document.querySelectorAll('*');
             
-            // Process hero sections first for immediate removal
+            // Process hero sections first for immediate removal (but NEVER FAQ)
             heroSections.forEach(section => {
-                if (!section) return;
+                if (!section || isFAQContent(section)) return; // Skip FAQ sections
                 section.querySelectorAll('*').forEach(element => {
+                    // NEVER remove FAQ content
+                    if (isFAQContent(element)) return;
+                    
                     const tagName = element.tagName.toLowerCase();
                     if (['script', 'style', 'meta', 'link', 'title', 'head'].includes(tagName)) return;
                     
@@ -969,10 +1047,10 @@
                             return count + (text.split(star).length - 1);
                         }, 0);
                         
-                        // If mostly stars or only stars, remove entire element
+                        // If mostly stars or only stars, remove entire element (but NOT FAQ)
                         if (starCount >= textTrimmed.length * 0.5 || textTrimmed.length < 10) {
                             const parent = element.parentElement;
-                            if (parent && 
+                            if (parent && !isFAQContent(element) && !isFAQContent(parent) &&
                                 parent.tagName !== 'HTML' && 
                                 parent.tagName !== 'BODY' && 
                                 parent.tagName !== 'HEAD' &&
@@ -981,20 +1059,25 @@
                                 element.remove();
                             }
                         } else {
-                            // Remove just the stars
-                            let newText = text;
-                            starChars.forEach(star => {
-                                newText = newText.replace(new RegExp(star.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '');
-                            });
-                            element.textContent = newText.trim();
+                            // Remove just the stars (but NOT from FAQ)
+                            if (!isFAQContent(element)) {
+                                let newText = text;
+                                starChars.forEach(star => {
+                                    newText = newText.replace(new RegExp(star.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '');
+                                });
+                                element.textContent = newText.trim();
+                            }
                         }
                     }
                 });
             });
             
-            // Then process all other elements
+            // Then process all other elements (but NEVER FAQ)
             
             allElements.forEach(element => {
+                // NEVER remove FAQ content
+                if (isFAQContent(element)) return;
+                
                 // Skip script, style, and other non-interactive elements
                 const tagName = element.tagName.toLowerCase();
                 if (['script', 'style', 'meta', 'link', 'title', 'head'].includes(tagName)) return;
@@ -1103,11 +1186,17 @@
                 });
                 
                 if (hasRelevantChanges) {
+                    // Always protect FAQ when content changes
+                    protectFAQContent();
+                    
                     debouncedRemoval();
-                    // Immediate targeted check for stars below start today button
-                    removeStarsBelowStartTodayButton();
+                    // Immediate targeted check for stars below join the waitlist button
+                    removeStarsBelowWaitlistButton();
                     // Immediate check for stars and lines when content changes
                     aggressiveRemoveStarsAndLines();
+                    
+                    // Protect FAQ again after cleanup
+                    protectFAQContent();
                 }
             });
             
@@ -1139,16 +1228,17 @@
             while (node = walker.nextNode()) {
                 const text = node.textContent || '';
                 if (starChars.some(star => text.includes(star))) {
-                    if (node.parentElement) {
+                    if (node.parentElement && !isFAQContent(node.parentElement)) {
                         nodesToRemove.push(node.parentElement);
                     }
                 }
             }
             
-            // Remove all elements containing stars
+            // Remove all elements containing stars (but NOT FAQ)
             nodesToRemove.forEach(element => {
                 try {
-                    if (element.tagName !== 'HTML' && 
+                    if (!isFAQContent(element) &&
+                        element.tagName !== 'HTML' && 
                         element.tagName !== 'BODY' && 
                         element.tagName !== 'HEAD' &&
                         !element.closest('script') &&
@@ -1158,21 +1248,25 @@
                 } catch (e) {}
             });
             
-            // Also check all elements directly
+            // Also check all elements directly (using the isFAQContent function declared above)
             const allElements = document.querySelectorAll('*');
             
             allElements.forEach(element => {
                 try {
+                    // NEVER remove FAQ content
+                    if (isFAQContent(element)) return;
+                    
                     const tagName = element.tagName.toLowerCase();
                     if (['script', 'style', 'meta', 'link', 'title', 'head', 'html', 'body'].includes(tagName)) return;
                     
-                    // Check text content for stars - REMOVE ANY ELEMENT WITH STARS
+                    // Check text content for stars - REMOVE ANY ELEMENT WITH STARS (but NOT FAQ)
                     const text = (element.textContent || '').trim();
                     const hasStars = starChars.some(star => text.includes(star));
                     
                     if (hasStars) {
-                        // Remove element containing stars - no conditions, just remove it
-                        if (element.tagName !== 'HTML' && 
+                        // Remove element containing stars - no conditions, just remove it (unless it's FAQ)
+                        if (!isFAQContent(element) &&
+                            element.tagName !== 'HTML' && 
                             element.tagName !== 'BODY' && 
                             element.tagName !== 'HEAD' &&
                             !element.closest('script') &&
@@ -1386,8 +1480,8 @@
             });
         };
 
-        // FAST TARGETED REMOVAL - Specifically for stars below "Start Today" button
-        const removeStarsBelowStartTodayButton = () => {
+        // FAST TARGETED REMOVAL - Specifically for stars below "Join the Waitlist" button
+        const removeStarsBelowWaitlistButton = () => {
             if (!document.body) return;
             
             const starChars = ['★', '☆', '⭐', '✦', '✧', '✩', '✪', '✫', '✬', '✭', '✮', '✯', '✰', '⋆', '⭑', '⭒'];
@@ -1427,25 +1521,25 @@
                 } catch (e) {}
             });
             
-            // Find all buttons/elements with "start today" text
+            // Find all buttons/elements with "join the waitlist" text
             const allElements = document.querySelectorAll('button, a, div, span, p');
-            const startTodayElements = [];
+            const waitlistElements = [];
             
             allElements.forEach(el => {
                 const text = (el.textContent || '').toLowerCase().trim();
-                if (text.includes('start today') || text === 'start today') {
-                    startTodayElements.push(el);
+                if (text.includes('join the waitlist') || text === 'join the waitlist' || text.includes('join waitlist') || text === 'join waitlist') {
+                    waitlistElements.push(el);
                 }
             });
             
-            // For each "start today" element, remove stars in next siblings and nearby
-            startTodayElements.forEach(startBtn => {
+            // For each "join the waitlist" element, remove stars in next siblings and nearby
+            waitlistElements.forEach(waitlistBtn => {
                 try {
-                    const parent = startBtn.parentElement;
+                    const parent = waitlistBtn.parentElement;
                     if (!parent) return;
                     
                     // Remove next sibling elements that contain stars
-                    let nextSibling = startBtn.nextElementSibling;
+                    let nextSibling = waitlistBtn.nextElementSibling;
                     let checkCount = 0;
                     while (nextSibling && checkCount < 5) { // Check up to 5 next siblings
                         // Check for SVG elements with star symbols (like <use href="#svg-...star...">)
@@ -1566,10 +1660,16 @@
 
         // Run immediately when DOM is ready, then continuously
         const runImmediateCleanup = () => {
-            removeStarsBelowStartTodayButton(); // Run this first for fast targeted removal
+            // ALWAYS protect FAQ first before any cleanup
+            protectFAQContent();
+            
+            removeStarsBelowWaitlistButton(); // Run this first for fast targeted removal
             aggressiveRemoveStarsAndLines();
             removeExperiencedPaymentsText();
             removeWhiteLines();
+            
+            // Protect FAQ again after cleanup
+            protectFAQContent();
         };
 
         // Defer ALL cleanup operations - prioritize header/hero loading
@@ -1600,9 +1700,18 @@
         // Run continuously but with much longer interval to not block header
         const continuousCleanup = () => {
             runImmediateCleanup();
+            // Always protect FAQ in continuous cleanup
+            protectFAQContent();
             setTimeout(continuousCleanup, 2000); // Much longer: Check every 2 seconds
         };
         setTimeout(continuousCleanup, 2000); // Start after 2 seconds to ensure header loads first
+        
+        // Also run FAQ protection continuously to ensure it's always visible
+        const continuousFAQProtection = () => {
+            protectFAQContent();
+            setTimeout(continuousFAQProtection, 1000); // Check every second
+        };
+        setTimeout(continuousFAQProtection, 500); // Start after 500ms
 
         // Also run the full cleanup with delays
         runWhenIdle(() => {
